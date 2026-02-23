@@ -1,0 +1,57 @@
+# Build
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.log
+*.vspscc
+*.vssscc
+.build/
+*.pidb
+*.scc
+*.sln.docstates
+
+# NuGet
+*.nupkg
+**/packages/
+!**/packages/build/
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# IDE
+.idea/
+.vs/
+*.rsuser
+
+# User-specific
+*.userprefs
+
+# Test
+[Tt]est[Rr]esult*/
+[Cc]overage/
+*.trx
+*.coverage
+*.coveragexml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+.env
+.env.local
+
+# Logs
+logs/
+*.log
