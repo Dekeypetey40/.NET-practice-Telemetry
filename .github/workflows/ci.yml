@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -p:TreatWarningsAsErrors=false
+
+      - name: Run unit tests
+        run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx"
+
+      - name: Run integration tests (Docker)
+        run: dotnet test tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-build -v normal --logger "trx;LogFileName=integration-tests.trx"
+        env:
+          DOCKER_HOST: unix:///var/run/docker.sock
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: "**/*.trx"

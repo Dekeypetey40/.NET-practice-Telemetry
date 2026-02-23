@@ -29,3 +29,6 @@ app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
+
+// Expose for integration tests (WebApplicationFactory<Program>)
+public partial class Program { }
