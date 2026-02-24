@@ -30,12 +30,12 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build src/Telemetry.Api/Telemetry.Api.csproj --no-restore -p:TreatWarningsAsErrors=false
-          dotnet build tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-restore -p:TreatWarningsAsErrors=false
-          dotnet build tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-restore -p:TreatWarningsAsErrors=false
+          dotnet build src/Telemetry.Api/Telemetry.Api.csproj --no-restore -p:TreatWarningsAsErrors=true
+          dotnet build tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-restore -p:TreatWarningsAsErrors=true
+          dotnet build tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-restore -p:TreatWarningsAsErrors=true
 
       - name: Run unit tests
-        run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx" --results-directory ./TestResults
+        run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx" --results-directory ./TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover,cobertura
 
       - name: Run integration tests (Docker)
         run: dotnet test tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-build -v normal --logger "trx;LogFileName=integration-tests.trx" --results-directory ./TestResults
@@ -47,3 +47,10 @@ jobs:
         if: always()
         with:
           files: "TestResults/**/*.trx"
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: coverage
+          path: TestResults/
