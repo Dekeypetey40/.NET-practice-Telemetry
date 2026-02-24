@@ -1,4 +1,5 @@
 using Telemetry.Domain.Enums;
+using Telemetry.Domain.StateMachine;
 using Telemetry.Domain.ValueObjects;
 
 namespace Telemetry.Domain.Entities;
@@ -15,6 +16,8 @@ public class Run
     public DateTime? CompletedAt { get; private set; }
     public string? Actor { get; private set; }
     public string? CorrelationId { get; private set; }
+    /// <summary>Concurrency token; incremented on each state change so concurrent updates fail with 409.</summary>
+    public int Version { get; private set; }
 
     private readonly List<RunEvent> _events = new();
     public IReadOnlyCollection<RunEvent> Events => _events.AsReadOnly();
@@ -43,41 +46,56 @@ public class Run
 
     public void SetQueued(string? actor = null)
     {
+        if (!RunStateMachine.CanQueue(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot queue. Only Created runs can be queued.");
         CurrentState = RunState.Queued;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Created→Queued", Actor);
     }
 
     public void SetRunning(string? actor = null)
     {
+        if (!RunStateMachine.CanStart(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot start. Only Queued runs can be started.");
         CurrentState = RunState.Running;
         StartedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Queued→Running", Actor);
     }
 
     public void SetCompleted(string? actor = null)
     {
+        if (!RunStateMachine.CanComplete(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot complete. Only Running runs can be completed.");
         CurrentState = RunState.Completed;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Running→Completed", Actor);
     }
 
     public void SetFailed(string? actor = null)
     {
+        if (!RunStateMachine.CanFail(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot fail. Only Running runs can be failed.");
         CurrentState = RunState.Failed;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Running→Failed", Actor);
     }
 
     public void SetCanceled(string? actor = null)
     {
+        if (!RunStateMachine.CanCancel(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot cancel. Only Created, Queued, or Running runs can be canceled.");
         var from = CurrentState.ToString();
         CurrentState = RunState.Canceled;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", $"{from}→Canceled", Actor);
     }
 }

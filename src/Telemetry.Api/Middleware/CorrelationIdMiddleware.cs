@@ -1,3 +1,5 @@
+using Serilog.Context;
+
 namespace Telemetry.Api.Middleware;
 
 public class CorrelationIdMiddleware
@@ -14,6 +16,9 @@ public class CorrelationIdMiddleware
         var correlationId = context.Request.Headers[HeaderName].FirstOrDefault() ?? Guid.NewGuid().ToString("N");
         context.Items[ItemKey] = correlationId;
         context.Response.Headers[HeaderName] = correlationId;
-        await _next(context);
+        using (LogContext.PushProperty("CorrelationId", correlationId))
+        {
+            await _next(context);
+        }
     }
 }
