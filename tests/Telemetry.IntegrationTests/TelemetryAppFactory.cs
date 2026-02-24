@@ -14,6 +14,8 @@ public class TelemetryAppFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        // Ensure connection string is available in CI (config and env so host startup never fails).
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _connectionString);
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
