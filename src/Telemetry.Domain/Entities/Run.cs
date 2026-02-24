@@ -1,4 +1,5 @@
 using Telemetry.Domain.Enums;
+using Telemetry.Domain.StateMachine;
 using Telemetry.Domain.ValueObjects;
 
 namespace Telemetry.Domain.Entities;
@@ -43,6 +44,8 @@ public class Run
 
     public void SetQueued(string? actor = null)
     {
+        if (!RunStateMachine.CanQueue(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot queue. Only Created runs can be queued.");
         CurrentState = RunState.Queued;
         Actor = actor ?? Actor;
         RecordEvent("StateTransition", "Created→Queued", Actor);
@@ -50,6 +53,8 @@ public class Run
 
     public void SetRunning(string? actor = null)
     {
+        if (!RunStateMachine.CanStart(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot start. Only Queued runs can be started.");
         CurrentState = RunState.Running;
         StartedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
@@ -58,6 +63,8 @@ public class Run
 
     public void SetCompleted(string? actor = null)
     {
+        if (!RunStateMachine.CanComplete(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot complete. Only Running runs can be completed.");
         CurrentState = RunState.Completed;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
@@ -66,6 +73,8 @@ public class Run
 
     public void SetFailed(string? actor = null)
     {
+        if (!RunStateMachine.CanFail(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot fail. Only Running runs can be failed.");
         CurrentState = RunState.Failed;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
@@ -74,6 +83,8 @@ public class Run
 
     public void SetCanceled(string? actor = null)
     {
+        if (!RunStateMachine.CanCancel(CurrentState))
+            throw new InvalidOperationException($"Run is in state {CurrentState}; cannot cancel. Only Created, Queued, or Running runs can be canceled.");
         var from = CurrentState.ToString();
         CurrentState = RunState.Canceled;
         CompletedAt = DateTime.UtcNow;
