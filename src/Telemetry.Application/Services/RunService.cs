@@ -18,8 +18,14 @@ public class RunService : IRunService
         _instrumentRepository = instrumentRepository;
     }
 
+    private const int MaxParametersCount = 50;
+    private const int MaxParameterKeyLength = 64;
+    private const int MaxParameterValueLength = 256;
+
     public async Task<RunResponse> CreateAsync(CreateRunRequest request, string? correlationId = null, CancellationToken cancellationToken = default)
     {
+        ValidateMethodParameters(request.Parameters);
+
         var instrument = await _instrumentRepository.GetByIdAsync(request.InstrumentId, cancellationToken: cancellationToken);
         if (instrument == null)
             throw new KeyNotFoundException($"Instrument {request.InstrumentId} not found.");
@@ -85,6 +91,21 @@ public class RunService : IRunService
         return new RunTimelineResponse(
             runId,
             events.Select(e => new RunTimelineEventResponse(e.Id, e.EventType, e.Timestamp, e.Data, e.Actor, e.CorrelationId)).ToList());
+    }
+
+    private static void ValidateMethodParameters(IReadOnlyDictionary<string, string>? parameters)
+    {
+        if (parameters == null || parameters.Count == 0)
+            return;
+        if (parameters.Count > MaxParametersCount)
+            throw new ArgumentException($"Method parameters cannot exceed {MaxParametersCount} entries.", nameof(CreateRunRequest.Parameters));
+        foreach (var kv in parameters)
+        {
+            if (kv.Key.Length > MaxParameterKeyLength)
+                throw new ArgumentException($"Method parameter key length cannot exceed {MaxParameterKeyLength}.", nameof(CreateRunRequest.Parameters));
+            if (kv.Value.Length > MaxParameterValueLength)
+                throw new ArgumentException($"Method parameter value length cannot exceed {MaxParameterValueLength}.", nameof(CreateRunRequest.Parameters));
+        }
     }
 
     private static RunResponse ToResponse(Run run) => new(
