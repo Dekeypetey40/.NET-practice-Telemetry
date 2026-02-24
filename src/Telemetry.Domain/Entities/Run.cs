@@ -16,6 +16,8 @@ public class Run
     public DateTime? CompletedAt { get; private set; }
     public string? Actor { get; private set; }
     public string? CorrelationId { get; private set; }
+    /// <summary>Concurrency token; incremented on each state change so concurrent updates fail with 409.</summary>
+    public int Version { get; private set; }
 
     private readonly List<RunEvent> _events = new();
     public IReadOnlyCollection<RunEvent> Events => _events.AsReadOnly();
@@ -48,6 +50,7 @@ public class Run
             throw new InvalidOperationException($"Run is in state {CurrentState}; cannot queue. Only Created runs can be queued.");
         CurrentState = RunState.Queued;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Created→Queued", Actor);
     }
 
@@ -58,6 +61,7 @@ public class Run
         CurrentState = RunState.Running;
         StartedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Queued→Running", Actor);
     }
 
@@ -68,6 +72,7 @@ public class Run
         CurrentState = RunState.Completed;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Running→Completed", Actor);
     }
 
@@ -78,6 +83,7 @@ public class Run
         CurrentState = RunState.Failed;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", "Running→Failed", Actor);
     }
 
@@ -89,6 +95,7 @@ public class Run
         CurrentState = RunState.Canceled;
         CompletedAt = DateTime.UtcNow;
         Actor = actor ?? Actor;
+        Version++;
         RecordEvent("StateTransition", $"{from}→Canceled", Actor);
     }
 }

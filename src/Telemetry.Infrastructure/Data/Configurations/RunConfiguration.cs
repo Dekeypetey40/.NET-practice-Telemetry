@@ -15,6 +15,7 @@ public class RunConfiguration : IEntityTypeConfiguration<Run>
         builder.Property(e => e.CurrentState).HasConversion<string>().HasMaxLength(32).IsRequired();
         builder.Property(e => e.Actor).HasMaxLength(256);
         builder.Property(e => e.CorrelationId).HasMaxLength(128);
+        builder.Property(e => e.Version).IsConcurrencyToken();
         builder.HasMany(e => e.Events).WithOne().HasForeignKey(ev => ev.RunId).OnDelete(DeleteBehavior.Cascade);
         builder.Metadata.FindNavigation(nameof(Run.Events))!.SetField("_events");
     }
