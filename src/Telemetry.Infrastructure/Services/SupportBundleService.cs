@@ -24,8 +24,13 @@ public class SupportBundleService : ISupportBundleService
         _hostEnvironment = hostEnvironment;
     }
 
+    /// <summary>Maximum log entries to include in a bundle; prevents excessive memory use.</summary>
+    public const int MaxLogEntriesCap = 1000;
+
     public async Task<Stream> CreateBundleForRunAsync(Guid runId, int lastLogEntriesCount = 100, CancellationToken cancellationToken = default)
     {
+        var logCount = Math.Clamp(lastLogEntriesCount, 1, MaxLogEntriesCap);
+
         var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);
         if (run == null)
             throw new KeyNotFoundException($"Run {runId} not found.");
@@ -39,7 +44,7 @@ public class SupportBundleService : ISupportBundleService
             AddTimelineEntry(zip, timeline);
             AddEnvironmentEntry(zip);
             if (_logCollector != null)
-                AddLogsEntry(zip, lastLogEntriesCount);
+                AddLogsEntry(zip, logCount);
         }
         stream.Position = 0;
         return stream;

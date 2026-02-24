@@ -129,6 +129,10 @@ stateDiagram-v2
 
 ---
 
+## Security
+
+This API has **no authentication or authorization**. It is intended for **trusted or internal use only** (e.g. local development, internal dashboards, or behind a gateway that enforces auth). Do not expose it directly to the internet without adding authentication (e.g. JWT, API keys) and authorization. The connection string must be provided via configuration (appsettings, User Secrets, or environment); there is no default fallback.
+
 ## Prerequisites
 
 - .NET 8 SDK  
