@@ -8,7 +8,8 @@ on:
 
 permissions:
   contents: read
-  checks: write   # required for publish-unit-test-result-action to create check runs
+  checks: write         # create check runs (test summary in Checks tab)
+  pull-requests: write  # post test result comment on PRs
 
 jobs:
   build-and-test:
