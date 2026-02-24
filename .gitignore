@@ -55,3 +55,6 @@ docker-compose.override.yml
 # Logs
 logs/
 *.log
+
+# Local-only docs (not shipped)
+docs/GITHUB_SETUP.md

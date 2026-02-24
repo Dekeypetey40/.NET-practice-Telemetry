@@ -1,8 +1,14 @@
+using Serilog;
 using Telemetry.Api.Middleware;
 using Telemetry.Application.Extensions;
 using Telemetry.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .ReadFrom.Configuration(ctx.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console());
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -30,7 +36,14 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 app.MapControllers();
 
-app.Run();
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // Expose for integration tests (WebApplicationFactory<Program>)
 public partial class Program { }
