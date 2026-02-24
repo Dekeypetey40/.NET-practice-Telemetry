@@ -27,27 +27,24 @@ Invalid transitions (e.g. start when already Completed) return **409 Conflict** 
 
 ## Run locally
 
-1. Start Postgres:
+1. Start Postgres (must be running before migrations):
    ```bash
    docker compose up -d
    ```
+   Wait a few seconds for the container to be ready.
 
 2. Apply migrations (from repo root):
    ```bash
    dotnet ef database update --project src/Telemetry.Infrastructure --startup-project src/Telemetry.Api
    ```
-   If the above fails (e.g. missing Design package), run from the API directory with connection string:
-   ```bash
-   $env:ConnectionStrings__DefaultConnection="Host=localhost;Database=telemetry;Username=postgres;Password=postgres"
-   dotnet ef database update --project ../Telemetry.Infrastructure
-   ```
+   The app uses **port 5433** for Postgres (Docker maps `5433:5432`) to avoid conflicting with a local PostgreSQL on 5432. If you get **password authentication failed**, ensure you're not overriding the connection string with port 5432; use `Port=5433` or rely on `appsettings.json`.
 
 3. Run the API:
    ```bash
    dotnet run --project src/Telemetry.Api
    ```
 
-4. Open Swagger: https://localhost:7xxx/swagger (port from launchSettings.json).
+4. Open Swagger: **http://localhost:5244/swagger** (default `http` profile). For HTTPS use the `https` launch profile: `dotnet run --project src/Telemetry.Api --launch-profile https`, then https://localhost:7254/swagger.
 
 ## Core endpoints
 
@@ -94,6 +91,7 @@ Use the same `X-Correlation-Id` header across calls to trace a run in logs.
 
 ## Troubleshooting
 
+- **28P01 / password authentication failed for user "postgres"**: The EF command is connecting to a Postgres that doesn’t accept `postgres`/`postgres`. Start the project’s Postgres with `docker compose up -d` and ensure nothing else is using port 5432 (app expects 5433 for Docker), or set `ConnectionStrings__DefaultConnection` to your actual host, user, and password (see “Apply migrations” above).
 - **Migrations**: Ensure `DefaultConnection` in `appsettings.json` (or env) points to your Postgres. Use `dotnet ef database update --project src/Telemetry.Infrastructure --startup-project src/Telemetry.Api` from the repo root.
 - **409 on queue/start/cancel**: Run is not in an allowed state; check `GET /runs/{id}` and the state machine rules.
 - **Integration tests fail**: Docker must be running. On Windows, ensure Docker Desktop is started and the daemon is available (e.g. `npipe://./pipe/docker_engine`).

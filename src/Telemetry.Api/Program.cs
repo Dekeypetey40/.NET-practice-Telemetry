@@ -25,7 +25,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Only redirect to HTTPS when we have an HTTPS port (e.g. launch profile "https"); avoids breaking Swagger on http-only.
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
