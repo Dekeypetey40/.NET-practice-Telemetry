@@ -29,7 +29,14 @@ public class RunRepository : IRunRepository
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         await EnsureNewRunEventsTrackedAsync(cancellationToken);
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new InvalidOperationException("The run was modified by another request. Please refresh and retry.");
+        }
     }
 
     private async Task EnsureNewRunEventsTrackedAsync(CancellationToken cancellationToken)

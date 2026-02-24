@@ -84,10 +84,10 @@ public class RunService : IRunService
 
     public async Task<RunTimelineResponse?> GetTimelineAsync(Guid runId, CancellationToken cancellationToken = default)
     {
-        var run = await _runRepository.GetByIdAsync(runId, includeEvents: false, cancellationToken);
+        var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);
         if (run == null)
             return null;
-        var events = await _runRepository.GetTimelineAsync(runId, cancellationToken);
+        var events = run.Events.OrderBy(e => e.Timestamp).ToList();
         return new RunTimelineResponse(
             runId,
             events.Select(e => new RunTimelineEventResponse(e.Id, e.EventType, e.Timestamp, e.Data, e.Actor, e.CorrelationId)).ToList());
