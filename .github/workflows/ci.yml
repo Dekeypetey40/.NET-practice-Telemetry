@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  checks: write   # required for publish-unit-test-result-action to create check runs
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -24,10 +28,10 @@ jobs:
         run: dotnet build --no-restore -p:TreatWarningsAsErrors=false
 
       - name: Run unit tests
-        run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx"
+        run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx" --results-directory ./TestResults
 
       - name: Run integration tests (Docker)
-        run: dotnet test tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-build -v normal --logger "trx;LogFileName=integration-tests.trx"
+        run: dotnet test tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-build -v normal --logger "trx;LogFileName=integration-tests.trx" --results-directory ./TestResults
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
 
@@ -35,4 +39,4 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: "**/*.trx"
+          files: "TestResults/**/*.trx"
