@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Telemetry.Api.Middleware;
+using Telemetry.Api.Services;
 using Telemetry.Application.DTOs;
 using Telemetry.Application.Services;
 
@@ -10,10 +10,13 @@ namespace Telemetry.Api.Controllers;
 public class RunsController : ControllerBase
 {
     private readonly IRunService _runService;
+    private readonly ICorrelationIdProvider _correlationIdProvider;
 
-    public RunsController(IRunService runService) => _runService = runService;
-
-    private string? CorrelationId => HttpContext.Items[CorrelationIdMiddleware.ItemKey] as string;
+    public RunsController(IRunService runService, ICorrelationIdProvider correlationIdProvider)
+    {
+        _runService = runService;
+        _correlationIdProvider = correlationIdProvider;
+    }
 
     [HttpPost]
     [ProducesResponseType(typeof(RunResponse), StatusCodes.Status201Created)]
@@ -21,7 +24,7 @@ public class RunsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RunResponse>> Create([FromBody] CreateRunRequest request, CancellationToken cancellationToken)
     {
-        var result = await _runService.CreateAsync(request, CorrelationId, cancellationToken);
+        var result = await _runService.CreateAsync(request, _correlationIdProvider.GetCorrelationId(), cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
     }
 
