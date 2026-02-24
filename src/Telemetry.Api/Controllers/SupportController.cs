@@ -16,14 +16,7 @@ public class SupportController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateSupportBundle(Guid id, [FromQuery] int lastLogEntries = 100, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var stream = await _supportBundleService.CreateBundleForRunAsync(id, lastLogEntries, cancellationToken);
-            return File(stream, "application/zip", $"support-bundle-{id:N}.zip");
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        var stream = await _supportBundleService.CreateBundleForRunAsync(id, lastLogEntries, cancellationToken);
+        return File(stream, "application/zip", $"support-bundle-{id:N}.zip");
     }
 }

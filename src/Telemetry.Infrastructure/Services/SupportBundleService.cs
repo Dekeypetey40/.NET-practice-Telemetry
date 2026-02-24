@@ -30,7 +30,7 @@ public class SupportBundleService : ISupportBundleService
         if (run == null)
             throw new KeyNotFoundException($"Run {runId} not found.");
 
-        var timeline = await _runRepository.GetTimelineAsync(runId, cancellationToken);
+        var timeline = run.Events.OrderBy(e => e.Timestamp).ToList();
 
         var stream = new MemoryStream();
         using (var zip = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))

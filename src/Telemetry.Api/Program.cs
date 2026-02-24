@@ -1,5 +1,6 @@
 using Serilog;
 using Telemetry.Api.Middleware;
+using Telemetry.Api.Services;
 using Telemetry.Application.Extensions;
 using Telemetry.Infrastructure.Extensions;
 
@@ -10,6 +11,8 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
     .Enrich.FromLogContext()
     .WriteTo.Console());
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICorrelationIdProvider, HttpContextCorrelationIdProvider>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
