@@ -22,7 +22,10 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore
+        run: |
+          dotnet restore src/Telemetry.Api/Telemetry.Api.csproj
+          dotnet restore tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj
+          dotnet restore tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj
 
       - name: Build
         run: |
