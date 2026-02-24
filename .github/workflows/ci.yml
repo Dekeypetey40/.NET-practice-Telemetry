@@ -25,7 +25,10 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore -p:TreatWarningsAsErrors=false
+        run: |
+          dotnet build src/Telemetry.Api/Telemetry.Api.csproj --no-restore -p:TreatWarningsAsErrors=false
+          dotnet build tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-restore -p:TreatWarningsAsErrors=false
+          dotnet build tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-restore -p:TreatWarningsAsErrors=false
 
       - name: Run unit tests
         run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx" --results-directory ./TestResults
