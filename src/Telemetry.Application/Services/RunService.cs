@@ -36,7 +36,7 @@ public class RunService : IRunService
 
     public async Task<RunResponse> QueueAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
     {
-        var run = await _runRepository.GetByIdAsync(runId, includeEvents: false, cancellationToken);
+        var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);
         if (run == null)
             throw new KeyNotFoundException($"Run {runId} not found.");
         if (!RunStateMachine.CanQueue(run.CurrentState))
@@ -48,7 +48,7 @@ public class RunService : IRunService
 
     public async Task<RunResponse> StartAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
     {
-        var run = await _runRepository.GetByIdAsync(runId, includeEvents: false, cancellationToken);
+        var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);
         if (run == null)
             throw new KeyNotFoundException($"Run {runId} not found.");
         if (!RunStateMachine.CanStart(run.CurrentState))
@@ -60,7 +60,7 @@ public class RunService : IRunService
 
     public async Task<RunResponse> CancelAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
     {
-        var run = await _runRepository.GetByIdAsync(runId, includeEvents: false, cancellationToken);
+        var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);
         if (run == null)
             throw new KeyNotFoundException($"Run {runId} not found.");
         if (!RunStateMachine.CanCancel(run.CurrentState))

@@ -26,7 +26,30 @@ public class RunRepository : IRunRepository
         return run;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default) => _db.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        await EnsureNewRunEventsTrackedAsync(cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task EnsureNewRunEventsTrackedAsync(CancellationToken cancellationToken)
+    {
+        var modifiedRuns = _db.ChangeTracker.Entries<Run>()
+            .Where(e => e.State == EntityState.Modified)
+            .Select(e => e.Entity)
+            .ToList();
+        foreach (var run in modifiedRuns)
+        {
+            foreach (var evt in run.Events)
+            {
+                var entry = _db.Entry(evt);
+                if (entry.State == EntityState.Detached)
+                    await _db.RunEvents.AddAsync(evt, cancellationToken);
+                else if (entry.State == EntityState.Modified)
+                    entry.State = EntityState.Added;
+            }
+        }
+    }
 
     public async Task<IReadOnlyList<RunEvent>> GetTimelineAsync(Guid runId, CancellationToken cancellationToken = default)
     {

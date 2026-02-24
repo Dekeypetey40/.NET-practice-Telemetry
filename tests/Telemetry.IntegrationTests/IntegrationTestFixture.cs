@@ -18,6 +18,7 @@ public class IntegrationTestFixture : IAsyncLifetime
     {
         await _container.StartAsync();
         var connectionString = _container.GetConnectionString();
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", connectionString);
         await ApplyMigrationsAsync(connectionString);
         var factory = new TelemetryAppFactory(connectionString);
         Client = factory.CreateClient();

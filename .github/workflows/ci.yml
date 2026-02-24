@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  checks: write         # create check runs (test summary in Checks tab)
+  pull-requests: write  # post test result comment on PRs
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -18,16 +23,22 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore
+        run: |
+          dotnet restore src/Telemetry.Api/Telemetry.Api.csproj
+          dotnet restore tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj
+          dotnet restore tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj
 
       - name: Build
-        run: dotnet build --no-restore -p:TreatWarningsAsErrors=false
+        run: |
+          dotnet build src/Telemetry.Api/Telemetry.Api.csproj --no-restore -p:TreatWarningsAsErrors=false
+          dotnet build tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-restore -p:TreatWarningsAsErrors=false
+          dotnet build tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-restore -p:TreatWarningsAsErrors=false
 
       - name: Run unit tests
-        run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx"
+        run: dotnet test tests/Telemetry.UnitTests/Telemetry.UnitTests.csproj --no-build -v normal --logger "trx;LogFileName=unit-tests.trx" --results-directory ./TestResults
 
       - name: Run integration tests (Docker)
-        run: dotnet test tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-build -v normal --logger "trx;LogFileName=integration-tests.trx"
+        run: dotnet test tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj --no-build -v normal --logger "trx;LogFileName=integration-tests.trx" --results-directory ./TestResults
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
 
@@ -35,4 +46,4 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: "**/*.trx"
+          files: "TestResults/**/*.trx"
