@@ -15,6 +15,28 @@ Invalid transitions (e.g. starting a run that is still Created) are rejected wit
 
 ---
 
+## What this project is good for
+
+This repo is a **learning and practice project** for me: it exercises layered architecture, an explicit state machine, event sourcing–style timelines, and support workflows. Beyond that, the concepts and structure are useful in real systems.
+
+**Why it’s useful**
+
+- **Controlled run lifecycle** – You can’t accidentally start a run that was never queued, or complete one that never started. The state machine and 409 responses make invalid flows impossible at the API boundary and give clear feedback to callers.
+- **Audit trail** – Every transition is stored with a timestamp and optional actor. That supports debugging, compliance, and “what happened when” for a given run.
+- **Support without live access** – The support bundle is a single ZIP (metadata, timeline, environment, logs). Support or engineering can inspect a failed run offline without touching the live API or database.
+- **Separation of concerns** – Domain and application layers are independent of HTTP and persistence, so you can add new clients (e.g. a queue worker or gRPC API) or change storage without rewriting business rules.
+
+**Real-life contexts (with extra work)**
+
+- **Lab or manufacturing** – Instruments are devices (chromatographs, test rigs, etc.); runs are jobs per sample or batch. In production you’d add auth, tenant isolation, and possibly integration with a lab information system (LIS) or MES. The run lifecycle and support bundle stay as-is.
+- **CI/CD or job queues** – Treat “instruments” as workers or agents and “runs” as jobs. The same state machine (Created → Queued → Running → Completed/Failed/Canceled) and timeline apply. You’d add a real queue (e.g. RabbitMQ, Azure Service Bus), retries, and timeouts.
+- **Internal tooling** – Dashboards or scripts that create runs, move them through states, and pull support bundles when something fails. This API plus the provided demo dashboard are a starting point; add authentication and authorization (e.g. API keys or OAuth) before exposing beyond a trusted network.
+- **Compliance and audits** – The event timeline and support bundle give a reproducible record of what happened in a run. With auth, audit logging, and retention policies, the same patterns support regulated environments.
+
+None of that is implemented here; the repo is a focused exercise. The ideas (state machine, timeline, support bundle, layering) are what you’d carry into a real system and extend as needed.
+
+---
+
 ## How it works
 
 ### Architecture: layers
