@@ -168,6 +168,18 @@ This API has **no authentication or authorization**. It is intended for **truste
 
 ---
 
+## Demo dashboard and GitHub Pages
+
+An **interactive demo** lets you try the run lifecycle without running the API:
+
+- **In the repo**: Open [docs/index.html](docs/index.html) in a browser (e.g. drag the file into the browser or use a local server). Use **Demo (no API)** to create instruments and runs and move them through states; the state diagram and timeline update as you go.
+- **On GitHub Pages**: Enable Pages in the repo settings (Settings → Pages → Source: Deploy from a branch → Branch: main, Folder: /docs). The site will be at `https://<username>.github.io/<repo>/` and works in **Demo mode** with no backend, so anyone can try it without cloning or running anything.
+- **Against the real API**: In the demo page, switch to **Live API**, set the API base URL (e.g. `http://localhost:5244`), then create instruments and runs and drive transitions. The API allows CORS from any origin so the dashboard can call it when hosted elsewhere (e.g. GitHub Pages).
+
+The dashboard is static (HTML/CSS/JS) in the [docs/](docs/) folder. Optional: use [scripts/telemetry-demo.http](scripts/telemetry-demo.http) (VS Code REST Client) or import [scripts/Telemetry-API.postman_collection.json](scripts/Telemetry-API.postman_collection.json) into Postman to run the same flow over HTTP.
+
+---
+
 ## API overview
 
 | Method | Endpoint | Description |
@@ -177,6 +189,8 @@ This API has **no authentication or authorization**. It is intended for **truste
 | POST | `/runs` | Create a run (instrument, sample, optional method metadata) |
 | POST | `/runs/{id}/queue` | Move run from Created → Queued |
 | POST | `/runs/{id}/start` | Move run from Queued → Running |
+| POST | `/runs/{id}/complete` | Move run from Running → Completed |
+| POST | `/runs/{id}/fail` | Move run from Running → Failed |
 | POST | `/runs/{id}/cancel` | Cancel from Created, Queued, or Running |
 | GET | `/runs/{id}` | Run state and metadata |
 | GET | `/runs/{id}/timeline` | Ordered event timeline |

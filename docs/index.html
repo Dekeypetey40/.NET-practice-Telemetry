@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Telemetry – Run lifecycle demo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>Telemetry API – Run lifecycle</h1>
+    <p class="subtitle">Create instruments and runs, then move runs through states. Use <strong>Demo mode</strong> to try it without a backend, or set an API URL to use a live server.</p>
+  </header>
+
+  <section class="mode-section">
+    <label class="mode-toggle">
+      <input type="radio" name="mode" value="demo" checked /> Demo (no API)
+    </label>
+    <label class="mode-toggle">
+      <input type="radio" name="mode" value="live" /> Live API
+    </label>
+    <div class="api-url-wrap" id="apiUrlWrap" hidden>
+      <label for="apiUrl">API base URL</label>
+      <input type="text" id="apiUrl" placeholder="http://localhost:5244" />
+      <span class="hint">Must allow CORS if different origin. No trailing slash.</span>
+    </div>
+  </section>
+
+  <main class="main">
+    <section class="panel create-panel">
+      <h2>Create</h2>
+      <div class="form-group">
+        <h3>Instrument</h3>
+        <input type="text" id="instName" placeholder="Name" value="LC-1" />
+        <input type="text" id="instType" placeholder="Type" value="Chromatograph" />
+        <input type="text" id="instSerial" placeholder="Serial (optional)" value="SN-001" />
+        <button type="button" id="btnCreateInstrument">Create instrument</button>
+      </div>
+      <div class="form-group">
+        <h3>Run</h3>
+        <select id="runInstrumentId"><option value="">Select instrument</option></select>
+        <input type="text" id="runSampleId" placeholder="Sample ID" value="S-001" />
+        <input type="text" id="runMethodName" placeholder="Method name (optional)" />
+        <input type="text" id="runMethodVersion" placeholder="Method version (optional)" />
+        <button type="button" id="btnCreateRun">Create run</button>
+      </div>
+    </section>
+
+    <section class="panel state-panel">
+      <h2>Run state machine</h2>
+      <div class="state-diagram" id="stateDiagram" aria-hidden="true"></div>
+      <p class="hint">Selected run's current state is highlighted.</p>
+    </section>
+
+    <section class="panel list-panel">
+      <h2>Instruments</h2>
+      <ul id="instrumentList" class="entity-list"></ul>
+      <h2>Runs</h2>
+      <ul id="runList" class="entity-list"></ul>
+    </section>
+
+    <section class="panel detail-panel">
+      <h2>Run detail</h2>
+      <div id="runDetailEmpty" class="empty">Select a run to see timeline and actions.</div>
+      <div id="runDetail" class="run-detail" hidden>
+        <div class="run-meta" id="runMeta"></div>
+        <div class="run-actions" id="runActions"></div>
+        <h3>Timeline</h3>
+        <ol id="runTimeline" class="timeline"></ol>
+        <div class="support-bundle" id="supportBundleSection" hidden>
+          <a id="supportBundleLink" href="#" download>Download support bundle (ZIP)</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p id="status" class="status"></p>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -76,6 +76,30 @@ public class RunService : IRunService
         return ToResponse(run);
     }
 
+    public async Task<RunResponse> CompleteAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
+    {
+        var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);
+        if (run == null)
+            throw new KeyNotFoundException($"Run {runId} not found.");
+        if (!RunStateMachine.CanComplete(run.CurrentState))
+            throw new InvalidOperationException($"Run is in state {run.CurrentState}; cannot complete. Only Running runs can be completed.");
+        run.SetCompleted(actor);
+        await _runRepository.SaveChangesAsync(cancellationToken);
+        return ToResponse(run);
+    }
+
+    public async Task<RunResponse> FailAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
+    {
+        var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);
+        if (run == null)
+            throw new KeyNotFoundException($"Run {runId} not found.");
+        if (!RunStateMachine.CanFail(run.CurrentState))
+            throw new InvalidOperationException($"Run is in state {run.CurrentState}; cannot fail. Only Running runs can be failed.");
+        run.SetFailed(actor);
+        await _runRepository.SaveChangesAsync(cancellationToken);
+        return ToResponse(run);
+    }
+
     public async Task<RunResponse?> GetByIdAsync(Guid runId, CancellationToken cancellationToken = default)
     {
         var run = await _runRepository.GetByIdAsync(runId, includeEvents: false, cancellationToken);

@@ -1,0 +1,64 @@
+{
+  "info": { "name": "Telemetry API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [
+    { "key": "BASE", "value": "http://localhost:5244" },
+    { "key": "INSTRUMENT_ID", "value": "" },
+    { "key": "RUN_ID", "value": "" },
+    { "key": "CORRELATION_ID", "value": "demo-{{$guid}}" }
+  ],
+  "item": [
+    {
+      "name": "1. Create instrument",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"LC-1\",\n  \"type\": \"Chromatograph\",\n  \"serialNumber\": \"SN-001\"\n}" },
+        "url": "{{BASE}}/instruments"
+      }
+    },
+    {
+      "name": "2. Create run",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Correlation-Id", "value": "{{CORRELATION_ID}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"instrumentId\": \"{{INSTRUMENT_ID}}\",\n  \"sampleId\": \"S-001\",\n  \"methodName\": \"MethodA\",\n  \"methodVersion\": \"1.0\"\n}" },
+        "url": "{{BASE}}/runs"
+      }
+    },
+    {
+      "name": "3. Queue run",
+      "request": { "method": "POST", "url": "{{BASE}}/runs/{{RUN_ID}}/queue?actor=operator" }
+    },
+    {
+      "name": "4. Start run",
+      "request": { "method": "POST", "url": "{{BASE}}/runs/{{RUN_ID}}/start?actor=operator" }
+    },
+    {
+      "name": "5. Get run",
+      "request": { "method": "GET", "url": "{{BASE}}/runs/{{RUN_ID}}" }
+    },
+    {
+      "name": "6. Get timeline",
+      "request": { "method": "GET", "url": "{{BASE}}/runs/{{RUN_ID}}/timeline" }
+    },
+    {
+      "name": "7a. Complete run",
+      "request": { "method": "POST", "url": "{{BASE}}/runs/{{RUN_ID}}/complete?actor=operator" }
+    },
+    {
+      "name": "7b. Fail run",
+      "request": { "method": "POST", "url": "{{BASE}}/runs/{{RUN_ID}}/fail?actor=operator" }
+    },
+    {
+      "name": "7c. Cancel run",
+      "request": { "method": "POST", "url": "{{BASE}}/runs/{{RUN_ID}}/cancel?actor=operator" }
+    },
+    {
+      "name": "8. Support bundle",
+      "request": { "method": "POST", "url": "{{BASE}}/runs/{{RUN_ID}}/support-bundle?lastLogEntries=100" }
+    }
+  ]
+}
