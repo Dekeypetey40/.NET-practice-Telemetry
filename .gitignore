@@ -58,3 +58,5 @@ logs/
 
 # Local-only docs (not shipped)
 docs/GITHUB_SETUP.md
+
+.fake
