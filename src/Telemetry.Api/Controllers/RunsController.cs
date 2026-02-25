@@ -58,6 +58,26 @@ public class RunsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("{id:guid}/complete")]
+    [ProducesResponseType(typeof(RunResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<RunResponse>> Complete(Guid id, [FromQuery] string? actor, CancellationToken cancellationToken)
+    {
+        var result = await _runService.CompleteAsync(id, actor, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/fail")]
+    [ProducesResponseType(typeof(RunResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<RunResponse>> Fail(Guid id, [FromQuery] string? actor, CancellationToken cancellationToken)
+    {
+        var result = await _runService.FailAsync(id, actor, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(RunResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -1,0 +1,56 @@
+### Telemetry API – full flow demo
+### Use with VS Code REST Client or similar. Set BASE to your API root (e.g. http://localhost:5244).
+@BASE = http://localhost:5244
+@CORRELATION_ID = demo-{{$guid}}
+
+### 1. Create instrument
+POST {{BASE}}/instruments
+Content-Type: application/json
+
+{
+  "name": "LC-1",
+  "type": "Chromatograph",
+  "serialNumber": "SN-001"
+}
+
+### 2. Create run (replace INSTRUMENT_ID with id from step 1)
+@INSTRUMENT_ID = 00000000-0000-0000-0000-000000000000
+POST {{BASE}}/runs
+Content-Type: application/json
+X-Correlation-Id: {{CORRELATION_ID}}
+
+{
+  "instrumentId": "{{INSTRUMENT_ID}}",
+  "sampleId": "S-001",
+  "methodName": "MethodA",
+  "methodVersion": "1.0"
+}
+
+### 3. Queue run (replace RUN_ID with id from step 2)
+@RUN_ID = 00000000-0000-0000-0000-000000000000
+POST {{BASE}}/runs/{{RUN_ID}}/queue?actor=operator
+
+### 4. Start run
+POST {{BASE}}/runs/{{RUN_ID}}/start?actor=operator
+
+### 5. Get run
+GET {{BASE}}/runs/{{RUN_ID}}
+
+### 6. Get timeline
+GET {{BASE}}/runs/{{RUN_ID}}/timeline
+
+### 7a. Complete run (terminal)
+POST {{BASE}}/runs/{{RUN_ID}}/complete?actor=operator
+
+### 7b. Or fail run (terminal)
+# POST {{BASE}}/runs/{{RUN_ID}}/fail?actor=operator
+
+### 7c. Or cancel run (terminal from Created/Queued/Running)
+# POST {{BASE}}/runs/{{RUN_ID}}/cancel?actor=operator
+
+### 8. Download support bundle
+POST {{BASE}}/runs/{{RUN_ID}}/support-bundle?lastLogEntries=100
+
+### --- Error case: start without queue (expect 409) ---
+# Create another run, then call start without queue:
+# POST {{BASE}}/runs/{{RUN_ID}}/start
