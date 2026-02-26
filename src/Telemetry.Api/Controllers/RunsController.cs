@@ -78,6 +78,15 @@ public class RunsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<RunResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<RunResponse>>> List([FromQuery] int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var capped = Math.Clamp(limit, 1, 500);
+        var runs = await _runService.GetRecentAsync(capped, cancellationToken);
+        return Ok(runs);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(RunResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

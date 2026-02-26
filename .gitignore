@@ -52,6 +52,9 @@ docker-compose.override.yml
 .env
 .env.local
 
+# Local config (never commit credentials)
+src/Telemetry.Api/appsettings.Development.json
+
 # Logs
 logs/
 *.log
