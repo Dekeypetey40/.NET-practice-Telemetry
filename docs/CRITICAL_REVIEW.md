@@ -2,6 +2,29 @@
 
 This document provides a critical assessment of the Telemetry API codebase against security, code cleanliness, maintainability, and scalability. It is intended to identify weaknesses and improvement opportunities, not to dismiss the overall architecture (which is sound).
 
+## Addressed since review (current state)
+
+- **Secrets (1.2):** No connection string fallback. `appsettings.json` uses a placeholder; connection string is required via User Secrets, `appsettings.Development.json` (gitignored), or environment. README documents setup.
+- **Support bundle DoS (1.5):** `lastLogEntries` is capped (1–1000) in the API and in `SupportBundleService.MaxLogEntriesCap`.
+- **Parameters bounds:** `CreateRunRequest.Parameters` is capped (count, key/value length) in `RunService`.
+- **Correlation ID (2.2):** Controllers use `ICorrelationIdProvider`; no direct dependency on middleware key.
+- **Support bundle timeline (2.3):** Bundle uses `run.Events` when run is loaded with `includeEvents: true`; no duplicate `GetTimelineAsync` call.
+- **GetTimeline (2.4):** Single load with `includeEvents: true` and mapping from `run.Events`.
+- **Serilog (2.5):** Serilog is configured; logs go to console and to an in-memory sink for support bundles.
+- **SupportController (2.1):** No redundant try/catch; middleware handles exceptions.
+- **Domain guards (3.3):** `Run.SetQueued`, `SetRunning`, `SetCanceled`, etc. enforce state machine; invalid transitions throw.
+- **Concurrency (4.1):** `Run` has a concurrency token; `DbUpdateConcurrencyException` is handled in the repository (409-style message).
+- **Log collector (4.4):** `InMemoryRingBufferLogCollector` is implemented and registered; Serilog sink feeds it so support bundles include recent logs.
+- **Dashboard (3.4):** WPF dashboard lists runs (GET /runs), shows details and timeline, and provides Queue/Start/Cancel actions.
+- **List endpoint (4.3):** `GET /runs?limit=` added with cap (1–500).
+- **Alarm FK:** `InstrumentConfiguration` configures Alarm–Instrument as required; migration applied.
+- **CORS:** Comment in `Program.cs` documents production-safe policy (named policy with specific origins).
+- **BDD/UI tests (3.5):** FlaUI smoke test (dashboard launch, refresh, queue run when API available); BDD project has one SpecFlow-style scenario (see below). Placeholder `UnitTest1` removed from UiTests.
+
+## Remaining risks and recommendations
+
+The sections below retain the original findings for context; items marked above are addressed. Remaining work: authn/authz, sanitising error messages in non-Development, API-level validation attributes, versioning, streaming/caps for support bundle memory, CI coverage and TreatWarningsAsErrors, and (optional) correlation filtering in the log collector.
+
 ---
 
 ## 1. Security
@@ -14,13 +37,7 @@ This document provides a critical assessment of the Telemetry API codebase again
 
 ### 1.2 Secrets and Configuration
 
-- **Finding:** `Program.cs` uses a hardcoded connection string fallback when `DefaultConnection` is missing:
-  ```csharp
-  var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-      ?? "Host=localhost;Database=telemetry;Username=postgres;Password=postgres";
-  ```
-- **Risk:** Default credentials can be committed or leaked; production could accidentally use fallback if config is misconfigured.
-- **Recommendation:** Do not fall back to a default connection string. Require `ConnectionStrings:DefaultConnection` (or throw at startup). Use User Secrets or environment variables for local dev and never commit credentials.
+- **Finding (addressed):** Previously a hardcoded fallback existed. **Now:** No fallback; connection string is required (placeholder in `appsettings.json` is rejected). User Secrets, `appsettings.Development.json` (gitignored), and README document setup.
 
 ### 1.3 Information Disclosure in Errors
 
@@ -36,9 +53,7 @@ This document provides a critical assessment of the Telemetry API codebase again
 
 ### 1.5 Support Bundle and DoS
 
-- **Finding:** `SupportController.CreateSupportBundle` accepts `lastLogEntries` as a query parameter with default 100 and no upper bound. `SupportBundleService.CreateBundleForRunAsync` builds the entire ZIP in a single `MemoryStream`.
-- **Risk:** A client can request `lastLogEntries=10000000`, causing high memory usage and potential OOM. Large timelines also increase memory for the in-memory ZIP.
-- **Recommendation:** Cap `lastLogEntries` (e.g. max 1000) in the API and optionally in the service. Consider streaming the ZIP (e.g. `ZipArchive` with streaming entries) or at least bounding the total size of log/timeline data included.
+- **Finding (partially addressed):** `lastLogEntries` is now capped (1–1000) in the API and in the service. The bundle is still built in a single `MemoryStream`; for very large timelines, consider streaming the ZIP or adding a clear cap/comment (see 4.2).
 
 ### 1.6 AllowedHosts and CORS
 
@@ -52,33 +67,23 @@ This document provides a critical assessment of the Telemetry API codebase again
 
 ### 2.1 Redundant Exception Handling
 
-- **Finding:** `SupportController.CreateSupportBundle` catches `KeyNotFoundException` and returns 404, while `ExceptionHandlingMiddleware` already maps `KeyNotFoundException` to 404.
-- **Risk:** Duplicate behavior; if middleware logic changes, the controller catch can become inconsistent or dead code.
-- **Recommendation:** Remove the try/catch in the controller and let the middleware handle it. Use a single, consistent strategy for exception-to-HTTP mapping.
+- **Finding (addressed):** Controller no longer catches `KeyNotFoundException`; middleware handles exception-to-HTTP mapping.
 
 ### 2.2 Correlation ID Coupling
 
-- **Finding:** `RunsController` reads the correlation ID from `HttpContext.Items[CorrelationIdMiddleware.ItemKey]`, depending on the middleware’s public constant.
-- **Risk:** Tight coupling between API and middleware; refactoring the middleware (e.g. changing key or using a different mechanism) requires controller changes.
-- **Recommendation:** Introduce an abstraction (e.g. `ICorrelationIdProvider` or `IHttpContextAccessor`-based helper in a shared API contract) so controllers do not depend on middleware implementation details.
+- **Finding (addressed):** Controllers use `ICorrelationIdProvider`; no direct dependency on the middleware’s key.
 
 ### 2.3 Duplicate Data Access in Support Bundle
 
-- **Finding:** `SupportBundleService.CreateBundleForRunAsync` loads the run with `includeEvents: true`, then calls `_runRepository.GetTimelineAsync(runId, cancellationToken)`. The timeline is already available as `run.Events`.
-- **Risk:** Redundant database query and unnecessary load; slight inconsistency (two sources for the same logical data).
-- **Recommendation:** Use `run.Events` for the timeline when run was loaded with `includeEvents: true`; do not call `GetTimelineAsync` in that path.
+- **Finding (addressed):** Bundle uses `run.Events` for the timeline; no duplicate `GetTimelineAsync` call.
 
 ### 2.4 GetTimeline Double Query
 
-- **Finding:** `RunService.GetTimelineAsync` calls `GetByIdAsync(runId, includeEvents: false)` to check existence and get run id, then `GetTimelineAsync(runId)` for events.
-- **Risk:** Two round-trips where one would suffice (e.g. get run with events, or get timeline and derive run id from first event if needed).
-- **Recommendation:** Either load run with `includeEvents: true` and map `run.Events` to the response, or have a single repository method that returns timeline (and optionally run) in one query. Prefer one round-trip for a single logical operation.
+- **Finding (addressed):** Run is loaded once with `includeEvents: true`; response is mapped from `run.Events`.
 
 ### 2.5 Plan vs Implementation: Serilog
 
-- **Finding:** The plan mentions correlation IDs and Serilog-enriched logs. The API project has no Serilog package or configuration in `Program.cs`.
-- **Risk:** Logs are not enriched with correlation ID, reducing the value of the support bundle and traceability.
-- **Recommendation:** Add Serilog, enrichers for correlation ID (and request path, etc.), and use it as the logging provider so support bundle log collection can filter by correlation ID as intended.
+- **Finding (addressed):** Serilog is configured; logs go to console and to an in-memory sink used by the support bundle. Correlation ID can be added via enrichers if needed.
 
 ---
 
@@ -98,19 +103,17 @@ This document provides a critical assessment of the Telemetry API codebase again
 
 ### 3.3 Domain State Transitions Not Self-Enforcing
 
-- **Finding:** `Run.SetQueued`, `SetRunning`, `SetCanceled`, etc. do not check the current state. They rely on `RunService` calling `RunStateMachine.CanQueue(run.CurrentState)` (etc.) before invoking the method.
-- **Risk:** If the repository or another caller mutates a run directly, the entity can transition to an invalid state; the domain does not defend itself.
-- **Recommendation:** Add guards in the entity methods (e.g. `if (!RunStateMachine.CanQueue(CurrentState)) throw ...`) so the domain is the single source of truth and misuse fails fast inside the entity.
+- **Finding (addressed):** Entity methods (`SetQueued`, `SetRunning`, `SetCanceled`, etc.) now enforce the state machine and throw on invalid transitions.
 
 ### 3.4 WPF Dashboard Placeholder
 
-- **Finding:** `MainWindow.xaml.cs` is effectively empty (only `InitializeComponent()`). The plan calls for a dashboard that lists runs and triggers queue/start/cancel.
+- **Finding (addressed):** Dashboard lists runs (GET /runs), shows details and timeline, Queue/Start/Cancel wired to API. Previously: MainWindow was empty (only `InitializeComponent()`). The plan calls for a dashboard that lists runs and triggers queue/start/cancel.
 - **Risk:** The “full-stack” and FlaUI automation story is incomplete; the dashboard does not yet demonstrate API integration or UX.
 - **Recommendation:** Implement at least a minimal dashboard (list runs, trigger actions, show state) and wire it to the API so the architecture is demonstrable and testable with FlaUI.
 
 ### 3.5 BDD and UI Tests Stubs
 
-- **Finding:** `Telemetry.BddTests` and `Telemetry.UiTests` contain placeholder `UnitTest1`-style files rather than SpecFlow scenarios or FlaUI tests.
+- **Finding (addressed):** UiTests has FlaUI smoke test; BddTests has run-lifecycle scenario. Previously: placeholder `UnitTest1`-style files rather than SpecFlow scenarios or FlaUI tests.
 - **Risk:** Test pyramid and “BDD for run lifecycle” / “FlaUI for WPF” from the plan are not yet realized.
 - **Recommendation:** Add at least one SpecFlow scenario for the run lifecycle and one FlaUI smoke test for the dashboard when the dashboard exists, and remove or replace placeholder tests.
 
@@ -120,7 +123,7 @@ This document provides a critical assessment of the Telemetry API codebase again
 
 ### 4.1 No Optimistic Concurrency on Runs
 
-- **Finding:** `Run` has no concurrency token (e.g. `RowVersion` or timestamp). Queue/Start/Cancel load the run, mutate it, and call `SaveChangesAsync`.
+- **Finding (addressed):** `Run` has a concurrency token; conflicts handled. Previously: no token (e.g. `RowVersion` or timestamp). Queue/Start/Cancel load the run, mutate it, and call `SaveChangesAsync`.
 - **Risk:** Concurrent requests (e.g. two “Start” calls for the same run, or Queue and Cancel at the same time) can result in last-write-wins and inconsistent or invalid state (e.g. double start).
 - **Recommendation:** Add a concurrency token to `Run` and handle `DbUpdateConcurrencyException` in the application layer (retry or return 409 with a clear message). This is important for any multi-user or automated scenario.
 
@@ -132,13 +135,11 @@ This document provides a critical assessment of the Telemetry API codebase again
 
 ### 4.3 No Pagination or List Endpoints
 
-- **Finding:** There are no list endpoints (e.g. list runs for an instrument, list instruments). Only get-by-id and create/transition actions exist.
-- **Risk:** When list endpoints are added later, returning unbounded lists will not scale; adding pagination later is a breaking change for clients.
-- **Recommendation:** When adding list endpoints, design them with pagination (e.g. `limit`/`offset` or `pageSize`/`continuationToken`) from the start. Consider cursor-based pagination for consistency under insert/update.
+- **Finding (partially addressed):** `GET /runs?limit=` exists with cap (1–500). No list instruments yet; future list endpoints should keep a limit/cursor pattern.
 
 ### 4.4 Log Collector Optional and Not Wired
 
-- **Finding:** `ISupportBundleLogCollector` is optional in `SupportBundleService`; it is not registered in `ServiceCollectionExtensions` (Infrastructure). So logs are never included in the bundle.
+- **Finding (addressed):** `InMemoryRingBufferLogCollector` is implemented and registered; Serilog sink feeds it. Previously: optional and not wired in `SupportBundleService`; it is not registered in `ServiceCollectionExtensions` (Infrastructure). So logs are never included in the bundle.
 - **Risk:** Support bundle does not fulfill the “logs filtered by correlation ID” story; the feature is partially implemented.
 - **Recommendation:** Implement and register a log collector (e.g. in-memory ring buffer or file-based, with correlation ID filtering) so support bundles actually include logs. Document the strategy (e.g. in-memory for dev, external sink for production).
 
@@ -168,24 +169,24 @@ This document provides a critical assessment of the Telemetry API codebase again
 
 ## 6. Summary Table
 
-| Area              | Severity | Summary                                                                 |
-|-------------------|----------|-------------------------------------------------------------------------|
-| Authn/Authz       | High     | None; all endpoints open                                                |
-| Secrets           | High     | Hardcoded connection string fallback                                    |
-| Error messages    | Medium   | Detailed exception messages returned to client                           |
-| Input validation  | Medium   | No DTO validation; unbounded Parameters and lastLogEntries               |
-| Support bundle DoS| Medium   | Unbounded lastLogEntries; full ZIP in memory                             |
-| Redundant code    | Low      | SupportController catch; duplicate timeline query in bundle/timeline    |
-| Coupling          | Low      | Controller depends on CorrelationId middleware key                       |
-| Concurrency       | Medium   | No optimistic concurrency on Run                                        |
-| Plan alignment    | Low      | Serilog missing; .NET 8 vs 9; TreatWarningsAsErrors false; no coverage  |
-| Dashboard/Tests   | Low      | WPF and BDD/FlaUI tests are stubs                                       |
+| Area              | Severity | Status / Summary                                                                 |
+|-------------------|----------|-----------------------------------------------------------------------------------|
+| Authn/Authz       | High     | Open: document trusted-only or add auth                                           |
+| Secrets           | High     | Addressed: no fallback; User Secrets / env / gitignored Development               |
+| Error messages    | Medium   | Open: consider generic messages in non-Development                               |
+| Input validation  | Medium   | Partially addressed: Parameters and lastLogEntries capped                         |
+| Support bundle DoS| Medium   | Addressed: lastLogEntries capped; bundle still in-memory                          |
+| Redundant code    | Low      | Addressed                                                                        |
+| Coupling          | Low      | Addressed (ICorrelationIdProvider)                                              |
+| Concurrency       | Medium   | Addressed (concurrency token + handling)                                          |
+| Plan alignment    | Low      | Partially open: .NET 8 vs 9; TreatWarningsAsErrors; coverage                     |
+| Dashboard/Tests   | Low      | Addressed: dashboard + FlaUI smoke test + BDD scenario                           |
 
 ---
 
-## 7. Recommended Priorities
+## 7. Recommended Priorities (remaining)
 
-1. **High:** Remove connection string fallback; require configuration. Add input validation and bounds (e.g. `lastLogEntries`, `Parameters`). Cap and validate support bundle parameters.
+1. **High:** Add authentication/authorization or clearly document trusted-only; require configuration. Add input validation and bounds (e.g. `lastLogEntries`, `Parameters`). Cap and validate support bundle parameters.
 2. **High:** Add optimistic concurrency for `Run` and handle concurrency conflicts in the API.
 3. **Medium:** Sanitize error responses in non-Development environments. Add authentication/authorization or document “trusted only.”
 4. **Medium:** Eliminate duplicate exception handling and duplicate timeline/bundle queries; introduce correlation ID abstraction.

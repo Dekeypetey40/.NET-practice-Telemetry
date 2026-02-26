@@ -14,7 +14,7 @@ public class InstrumentConfiguration : IEntityTypeConfiguration<Instrument>
         builder.Property(e => e.Type).HasMaxLength(128).IsRequired();
         builder.Property(e => e.SerialNumber).HasMaxLength(128);
         builder.Property(e => e.Status).HasMaxLength(64).IsRequired();
-        builder.HasMany(e => e.Alarms).WithOne().HasForeignKey(a => a.InstrumentId).IsRequired(false);
+        builder.HasMany(e => e.Alarms).WithOne().HasForeignKey(a => a.InstrumentId).IsRequired();
         builder.Metadata.FindNavigation(nameof(Instrument.Alarms))!.SetField("_alarms");
     }
 }

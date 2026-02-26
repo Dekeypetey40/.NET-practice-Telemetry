@@ -106,6 +106,12 @@ public class RunService : IRunService
         return run == null ? null : ToResponse(run);
     }
 
+    public async Task<IReadOnlyList<RunResponse>> GetRecentAsync(int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var runs = await _runRepository.GetRecentAsync(limit, cancellationToken);
+        return runs.Select(ToResponse).ToList();
+    }
+
     public async Task<RunTimelineResponse?> GetTimelineAsync(Guid runId, CancellationToken cancellationToken = default)
     {
         var run = await _runRepository.GetByIdAsync(runId, includeEvents: true, cancellationToken);

@@ -19,6 +19,15 @@ public class RunRepository : IRunRepository
         return await query.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Run>> GetRecentAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        var capped = Math.Clamp(limit, 1, 500);
+        return await _db.Runs
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(capped)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<Run> AddAsync(Run run, CancellationToken cancellationToken = default)
     {
         await _db.Runs.AddAsync(run, cancellationToken);

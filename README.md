@@ -162,6 +162,23 @@ This API has **no authentication or authorization**. It is intended for **truste
 
 ---
 
+## Configuration (connection string)
+
+The API does not ship with a connection string. Provide it in one of these ways:
+
+- **User Secrets** (recommended for local dev):  
+  `dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=telemetry;Username=postgres;Password=YOUR_PASSWORD"`  
+  (Run from `src/Telemetry.Api`.)
+
+- **appsettings.Development.json** (local only; do not commit):  
+  Copy `appsettings.Development.json.example` to `appsettings.Development.json` in `src/Telemetry.Api`, then set your connection string.  
+  `appsettings.Development.json` is gitignored.
+
+- **Environment variable**:  
+  `ConnectionStrings__DefaultConnection=Host=...;Port=5433;Database=telemetry;...`
+
+---
+
 ## Run locally
 
 1. **Start PostgreSQL** (app uses host port **5433** to avoid clashing with a local PostgreSQL on 5432):
@@ -254,6 +271,7 @@ Connection string must be provided via configuration (e.g. `appsettings.json`, U
 
 ## Troubleshooting
 
+- **ConnectionStrings:DefaultConnection is required** – Set the connection string via User Secrets, `appsettings.Development.json` (see [Configuration](#configuration-connection-string)), or environment variable.
 - **28P01 / password authentication failed for user "postgres"** – The app expects PostgreSQL on **port 5433** (see `docker-compose.yml` and `appsettings.json`). If you have another PostgreSQL on 5432, either use port 5433 for this app or set `ConnectionStrings__DefaultConnection` to match your server (host, port, user, password).
 - **409 on queue/start/cancel** – The run is not in an allowed state. Use `GET /runs/{id}` to see its state and the state machine rules above.
 - **Integration tests fail** – Docker must be running (e.g. Docker Desktop on Windows).

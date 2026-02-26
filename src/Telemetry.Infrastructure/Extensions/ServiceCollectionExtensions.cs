@@ -9,12 +9,14 @@ namespace Telemetry.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddTelemetryInfrastructure(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddTelemetryInfrastructure(this IServiceCollection services, string connectionString, ISupportBundleLogCollector? logCollector = null)
     {
         services.AddDbContext<TelemetryDbContext>(options =>
             options.UseNpgsql(connectionString));
         services.AddScoped<IRunRepository, RunRepository>();
         services.AddScoped<IInstrumentRepository, InstrumentRepository>();
+        if (logCollector != null)
+            services.AddSingleton<ISupportBundleLogCollector>(logCollector);
         services.AddScoped<ISupportBundleService, SupportBundleService>();
         return services;
     }
