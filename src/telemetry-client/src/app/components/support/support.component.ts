@@ -26,7 +26,7 @@ export class SupportComponent {
 
   checkHealth(): void {
     this.checking.set(true);
-    this.http.get<HealthStatus>('/health').subscribe({
+    this.http.get<HealthStatus>('/api/health').subscribe({
       next: (res) => {
         this.healthStatus.set(res.status);
         this.checking.set(false);

@@ -214,7 +214,7 @@ The API does not ship with a connection string. Provide it in one of these ways:
    npm start
    ```
 
-   Open **http://localhost:4200**. The dev server proxies API requests to `localhost:5244`.
+   Open **http://localhost:4200**. The Angular app calls the API under `/api/*` (proxied to `localhost:5244`).
 
 ### Full-stack Docker Compose
 
@@ -224,8 +224,16 @@ Run everything with one command (no local .NET or Node required):
 docker compose up --build
 ```
 
+If BuildKit fails on Windows/OneDrive with `Canceled: context canceled`, build with the classic builder:
+
+```bash
+set DOCKER_BUILDKIT=0
+docker compose build
+docker compose up -d
+```
+
 - **API**: http://localhost:5244 (Swagger at `/swagger`)
-- **Angular client**: http://localhost:4200
+- **Angular client**: http://localhost:4200 (API proxied under `/api`)
 - **PostgreSQL**: port 5433
 
 ---

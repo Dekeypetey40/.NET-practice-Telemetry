@@ -1,23 +1,11 @@
 {
-  "/runs": {
-    "target": "http://localhost:5244",
-    "secure": false,
-    "changeOrigin": true
-  },
-  "/instruments": {
-    "target": "http://localhost:5244",
-    "secure": false,
-    "changeOrigin": true
-  },
-  "/health": {
-    "target": "http://localhost:5244",
-    "secure": false,
-    "changeOrigin": true
-  },
-  "/hubs": {
+  "/api": {
     "target": "http://localhost:5244",
     "secure": false,
     "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": ""
+    },
     "ws": true
   }
 }

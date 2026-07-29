@@ -35,24 +35,17 @@ export interface CreateRunRequest {
   parameters?: Record<string, string>;
 }
 
-export interface Instrument {
-  id: string;
+/** Matches API InstrumentHealthResponse from POST /instruments and GET /instruments/{id}/health. */
+export interface InstrumentHealthResponse {
+  instrumentId: string;
   name: string;
-  type: string;
-  serialNumber: string;
   status: string;
-  createdAt: string;
   lastHealthCheck: string | null;
-}
-
-export interface InstrumentHealth {
-  instrument: Instrument;
   alarms: Alarm[];
 }
 
 export interface Alarm {
   id: string;
-  instrumentId: string;
   severity: string;
   message: string;
   raisedAt: string;

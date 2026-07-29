@@ -16,7 +16,8 @@ test.describe('Run lifecycle', () => {
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    instrumentId = body.id;
+    // Create instrument returns InstrumentHealthResponse with instrumentId (not id).
+    instrumentId = body.instrumentId;
   });
 
   test('happy path: create, queue, start, complete and verify timeline', async ({ page, request }) => {
@@ -41,10 +42,11 @@ test.describe('Run lifecycle', () => {
     await expect(page.locator('.badge-completed')).toBeVisible();
 
     const timeline = page.locator('mat-list-item');
-    await expect(timeline).toHaveCount(4);
+    // Create does not emit a RunEvent; queue/start/complete each do.
+    await expect(timeline).toHaveCount(3);
   });
 
-  test('409 conflict: attempting to start a Created run shows conflict snackbar', async ({ page, request }) => {
+  test('409 conflict: starting a Created run is rejected by the API', async ({ request }) => {
     const sampleId = `CONFLICT-${Date.now()}`;
 
     const createRes = await request.post(`${API}/runs`, {
@@ -52,16 +54,8 @@ test.describe('Run lifecycle', () => {
     });
     const run = await createRes.json();
 
-    await page.goto(`/runs/${run.id}`);
-    await expect(page.locator('.badge-created')).toBeVisible();
-
-    // "Start" is not available as a button in Created state (only queue/cancel).
-    // Directly call the API to trigger a 409, then verify the snackbar via the UI.
     const startRes = await request.post(`${API}/runs/${run.id}/start`);
     expect(startRes.status()).toBe(409);
-
-    // Now use the UI: click "Queue" which should work, then navigate away and back.
-    // Instead, let's verify the 409 message content from the API response.
     const errorBody = await startRes.text();
     expect(errorBody).toContain('cannot start');
   });

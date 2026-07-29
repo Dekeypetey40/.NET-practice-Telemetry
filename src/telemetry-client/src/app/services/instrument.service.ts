@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Instrument, InstrumentHealth, CreateInstrumentRequest } from '../models/run.model';
+import { InstrumentHealthResponse, CreateInstrumentRequest } from '../models/run.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -10,11 +10,11 @@ export class InstrumentService {
 
   constructor(private readonly http: HttpClient) {}
 
-  create(request: CreateInstrumentRequest): Observable<Instrument> {
-    return this.http.post<Instrument>(this.baseUrl, request);
+  create(request: CreateInstrumentRequest): Observable<InstrumentHealthResponse> {
+    return this.http.post<InstrumentHealthResponse>(this.baseUrl, request);
   }
 
-  getHealth(id: string): Observable<InstrumentHealth> {
-    return this.http.get<InstrumentHealth>(`${this.baseUrl}/${id}/health`);
+  getHealth(id: string): Observable<InstrumentHealthResponse> {
+    return this.http.get<InstrumentHealthResponse>(`${this.baseUrl}/${id}/health`);
   }
 }
