@@ -19,6 +19,15 @@ public class InstrumentRepository : IInstrumentRepository
         return await query.FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Instrument>> GetRecentAsync(int limit, CancellationToken cancellationToken = default)
+    {
+        var capped = Math.Clamp(limit, 1, 500);
+        return await _db.Instruments
+            .OrderByDescending(i => i.CreatedAt)
+            .Take(capped)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<Instrument> AddAsync(Instrument instrument, CancellationToken cancellationToken = default)
     {
         await _db.Instruments.AddAsync(instrument, cancellationToken);

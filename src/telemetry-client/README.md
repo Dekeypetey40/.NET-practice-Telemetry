@@ -1,27 +1,33 @@
-# TelemetryClient
+# Telemetry Angular client
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.2.21.
+Browser UI for the Telemetry API (runs, instruments, state transitions, health).
 
-## Development server
+Architecture, API design, and full-stack setup live in the [root README](../../README.md).
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+## Run (dev)
 
-## Code scaffolding
+Requires the API at `http://localhost:5244` (see root README).
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```bash
+npm install
+npm start
+```
+
+Open **http://localhost:4200**. Requests to `/api/*` are proxied to the API (`proxy.conf.json`).
 
 ## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+npm run build
+```
 
-## Running unit tests
+## E2E (Playwright)
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+API must be running:
 
-## Running end-to-end tests
+```bash
+npm run e2e:install   # first time only
+npm run e2e
+```
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Or use full-stack Compose from the repo root (`docker compose up --build`); CI runs Playwright against that stack.

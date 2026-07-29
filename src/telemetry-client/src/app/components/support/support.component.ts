@@ -7,10 +7,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 
-interface HealthStatus {
-  status: string;
-}
-
 @Component({
   selector: 'app-support',
   standalone: true,
@@ -20,19 +16,22 @@ interface HealthStatus {
 })
 export class SupportComponent {
   readonly healthStatus = signal<string | null>(null);
+  readonly lastError = signal<string | null>(null);
   readonly checking = signal(false);
 
   constructor(private readonly http: HttpClient) {}
 
   checkHealth(): void {
     this.checking.set(true);
-    this.http.get<HealthStatus>('/api/health').subscribe({
-      next: (res) => {
-        this.healthStatus.set(res.status);
+    this.lastError.set(null);
+    this.http.get('/api/health', { responseType: 'text' }).subscribe({
+      next: (text) => {
+        this.healthStatus.set(text.trim());
         this.checking.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.healthStatus.set('Unhealthy');
+        this.lastError.set(err instanceof Error ? err.message : 'Request failed');
         this.checking.set(false);
       },
     });

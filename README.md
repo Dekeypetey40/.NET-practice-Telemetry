@@ -148,6 +148,8 @@ stateDiagram-v2
 - **PostgreSQL + EF Core** – Relational model fits instruments, runs, events, and alarms; EF Core handles migrations and keeps the repository abstraction simple.
 - **Support bundle as a ZIP** – Single artifact (metadata, timeline, environment, optional logs) that can be opened offline and shared without needing live access to the API or database.
 - **Correlation ID** – Optional header (`X-Correlation-Id`) ties all requests for a run together in logs and in the support bundle, so you can trace a full session.
+- **SignalR after commit (best-effort)** – Run state changes are broadcast to clients after the DB save. Notification failures are logged and ignored so a transport error cannot turn a successful transition into a 500 or force false retries.
+- **`/api` prefix for the Angular client** – SPA routes (`/runs`, `/instruments`) never collide with API routes; Nginx and the Angular proxy both forward `/api` to the backend.
 
 ---
 
@@ -182,43 +184,9 @@ The API does not ship with a connection string. Provide it in one of these ways:
 
 ## Run locally
 
-1. **Start PostgreSQL** (app uses host port **5433** to avoid clashing with a local PostgreSQL on 5432):
+### Option A: Full stack with Docker Compose
 
-   ```bash
-   docker compose up -d
-   ```
-
-   Wait a few seconds for the container to be ready.
-
-2. **Apply migrations** (from repo root):
-
-   ```bash
-   dotnet ef database update --project src/Telemetry.Infrastructure --startup-project src/Telemetry.Api
-   ```
-
-3. **Run the API**:
-
-   ```bash
-   dotnet run --project src/Telemetry.Api
-   ```
-
-4. **Open Swagger**: **http://localhost:5244/swagger**
-
-   For HTTPS: `dotnet run --project src/Telemetry.Api --launch-profile https`, then https://localhost:7254/swagger.
-
-5. **Run the Angular client** (in a second terminal):
-
-   ```bash
-   cd src/telemetry-client
-   npm install
-   npm start
-   ```
-
-   Open **http://localhost:4200**. The Angular app calls the API under `/api/*` (proxied to `localhost:5244`).
-
-### Full-stack Docker Compose
-
-Run everything with one command (no local .NET or Node required):
+No local .NET or Node required:
 
 ```bash
 docker compose up --build
@@ -232,29 +200,69 @@ docker compose build
 docker compose up -d
 ```
 
-- **API**: http://localhost:5244 (Swagger at `/swagger`)
-- **Angular client**: http://localhost:4200 (API proxied under `/api`)
-- **PostgreSQL**: port 5433
+- **Angular client**: http://localhost:4200 (API under `/api`)
+- **API / Swagger**: http://localhost:5244/swagger
+- **PostgreSQL**: host port **5433**
+- Migrations apply automatically in the API container (`Database__ApplyMigrations=true`)
+
+### Option B: API + Angular on the host (Postgres in Docker)
+
+1. **Start PostgreSQL only**:
+
+   ```bash
+   docker compose up -d postgres
+   ```
+
+2. **Configure the connection string** (see [Configuration](#configuration-connection-string)). For the Compose Postgres service:
+
+   `Host=localhost;Port=5433;Database=telemetry;Username=postgres;Password=postgres`
+
+3. **Apply migrations** (from repo root):
+
+   ```bash
+   dotnet ef database update --project src/Telemetry.Infrastructure --startup-project src/Telemetry.Api
+   ```
+
+4. **Run the API**:
+
+   ```bash
+   dotnet run --project src/Telemetry.Api
+   ```
+
+   Swagger: **http://localhost:5244/swagger**  
+   HTTPS profile: `dotnet run --project src/Telemetry.Api --launch-profile https` → https://localhost:7254/swagger
+
+5. **Run the Angular client** (second terminal):
+
+   ```bash
+   cd src/telemetry-client
+   npm install
+   npm start
+   ```
+
+   UI: **http://localhost:4200**. Calls go to `/api/*` and are proxied to `localhost:5244`.
 
 ---
 
 ## Angular client
 
-The Angular 18 client in [src/telemetry-client/](src/telemetry-client/) provides a browser-based UI for the Telemetry API:
+The Angular 18 app in [src/telemetry-client/](src/telemetry-client/) is a thin UI over the same API:
 
-- **Run list** (`/runs`) -- table of runs with color-coded state badges, auto-refreshes via SignalR
-- **Create run** (`/runs/new`) -- typed reactive form for creating a run with instrument and sample IDs
-- **Run detail** (`/runs/:id`) -- run metadata, state transition buttons (only valid actions shown), event timeline, support bundle download
-- **Health** (`/support`) -- checks the API's `/health` endpoint (PostgreSQL connectivity)
+| Route | Purpose |
+|-------|---------|
+| `/runs` | List runs; live updates via SignalR |
+| `/runs/new` | Create a run (instrument chosen from `GET /instruments`) |
+| `/instruments` | Create/list instruments |
+| `/runs/:id` | Detail, valid transitions only, timeline, support bundle |
+| `/support` | Calls `GET /health` (API + PostgreSQL) |
 
-Key patterns demonstrated:
-- Standalone components (no NgModules)
-- Signals for reactive state (`signal()`, `computed()`)
-- `HttpClient` with functional interceptors (correlation ID, error handling)
-- SignalR integration for real-time updates
-- 409 Conflict handling with Material snackbar UX
-- Custom `stateBadge` pipe for color-coded state chips
-- Typed reactive forms with `nonNullable` form builder
+Important client choices:
+- **Standalone components + signals** – modern Angular without NgModules; local UI state stays explicit
+- **Functional HTTP interceptors** – attach `X-Correlation-Id`; surface 409s with a clear snackbar message from the API `{ error }` body
+- **SignalR on `/api/hubs/runs`** – list/detail stay in sync when any client changes run state
+- **Playwright e2e** – happy-path lifecycle plus a 409 conflict asserted in the UI (also run in CI against Compose)
+
+More run/build/e2e commands: [src/telemetry-client/README.md](src/telemetry-client/README.md).
 
 ---
 
@@ -275,6 +283,7 @@ The dashboard is static (HTML/CSS/JS) in the [docs/](docs/) folder. Optional: us
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/instruments` | Create an instrument |
+| GET | `/instruments` | List recent instruments |
 | GET | `/instruments/{id}/health` | Instrument health and alarms |
 | POST | `/runs` | Create a run (instrument, sample, optional method metadata) |
 | POST | `/runs/{id}/queue` | Move run from Created → Queued |

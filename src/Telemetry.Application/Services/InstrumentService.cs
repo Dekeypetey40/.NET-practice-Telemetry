@@ -23,6 +23,21 @@ public class InstrumentService : IInstrumentService
         return instrument == null ? null : ToHealthResponse(instrument);
     }
 
+    public async Task<IReadOnlyList<InstrumentResponse>> GetRecentAsync(int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var instruments = await _instrumentRepository.GetRecentAsync(limit, cancellationToken);
+        return instruments.Select(ToResponse).ToList();
+    }
+
+    private static InstrumentResponse ToResponse(Instrument i) => new(
+        i.Id,
+        i.Name,
+        i.Type,
+        i.SerialNumber,
+        i.Status,
+        i.CreatedAt,
+        i.LastHealthCheck);
+
     private static InstrumentHealthResponse ToHealthResponse(Instrument i) => new(
         i.Id,
         i.Name,

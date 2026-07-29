@@ -1,12 +1,20 @@
 .run-form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: 500px;
+  gap: var(--space-xs);
+  max-width: 28rem;
 }
 
-.form-actions {
+.loading-inline {
   display: flex;
-  gap: 1rem;
   align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+  color: var(--text-muted);
+}
+
+.hint {
+  margin: 0 0 var(--space-sm);
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
