@@ -1,9 +1,11 @@
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Telemetry.Api.Hubs;
 using Telemetry.Api.Middleware;
 using Telemetry.Api.Services;
 using Telemetry.Application.Contracts;
 using Telemetry.Application.Extensions;
+using Telemetry.Infrastructure.Data;
 using Telemetry.Infrastructure.Extensions;
 using Telemetry.Infrastructure.Services;
 
@@ -46,6 +48,14 @@ builder.Services.AddTelemetryApplication();
 builder.Services.AddTelemetryInfrastructure(connectionString, logCollector);
 
 var app = builder.Build();
+
+// Opt-in for Docker/demo: apply EF migrations on startup so a fresh Postgres is usable.
+if (builder.Configuration.GetValue("Database:ApplyMigrations", false))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<TelemetryDbContext>();
+    db.Database.Migrate();
+}
 
 app.UseCors();
 app.UseMiddleware<CorrelationIdMiddleware>();

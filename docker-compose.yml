@@ -22,6 +22,7 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=telemetry;Username=postgres;Password=postgres"
       ASPNETCORE_ENVIRONMENT: Development
+      Database__ApplyMigrations: "true"
     depends_on:
       postgres:
         condition: service_healthy

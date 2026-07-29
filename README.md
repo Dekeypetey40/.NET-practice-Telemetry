@@ -341,4 +341,9 @@ Connection string must be provided via configuration (e.g. `appsettings.json`, U
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on push and pull requests to `main`: install Node + npm ci + Angular build → restore → .NET build → unit tests → integration tests (Testcontainers) → publish test results.
+GitHub Actions (`.github/workflows/ci.yml`) runs on push and pull requests to `main`:
+
+- **build-and-test**: Node + Angular production build → .NET restore/build → unit tests → integration tests (Testcontainers) → publish results
+- **compose-e2e**: `docker compose up --build` (postgres + API + Angular client) → health/smoke checks → Playwright e2e against the live stack
+
+The API container applies EF migrations on startup when `Database__ApplyMigrations=true` (set in `docker-compose.yml`).

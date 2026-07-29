@@ -11,8 +11,8 @@ export default defineConfig({
     headless: true,
     screenshot: 'only-on-failure',
   },
-  // Angular app is expected to be available; reuse Docker nginx or ng serve.
-  // API must already be running at localhost:5244.
+  // Prefer an already-running stack (Docker Compose client on :4200).
+  // Fall back to ng serve for local-only runs.
   webServer: {
     command: 'npx ng serve --port 4200',
     url: 'http://localhost:4200',
