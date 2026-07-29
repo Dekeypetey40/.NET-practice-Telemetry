@@ -12,3 +12,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Telemetry.Api/Dockerfile
+    ports:
+      - "5244:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=telemetry;Username=postgres;Password=postgres"
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build:
+      context: src/telemetry-client
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      - api

@@ -1,0 +1,13 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+docs/
+tests/
+scripts/
+.git/
+.github/
+.vs/
+.idea/
+.cursor/
