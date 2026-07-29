@@ -1,28 +1,6 @@
-.layout {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
 .instrument-form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: 500px;
-}
-
-.full-width {
-  width: 100%;
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.empty-message {
-  text-align: center;
-  padding: 1.5rem;
-  color: rgba(0, 0, 0, 0.54);
+  gap: var(--space-xs);
+  max-width: 28rem;
 }

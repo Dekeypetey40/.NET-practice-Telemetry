@@ -29,7 +29,7 @@ test.describe('Run lifecycle', () => {
     const run = await createRes.json();
 
     await page.goto(`/runs/${run.id}`);
-    await expect(page.locator('mat-card-title').first()).toContainText('Run Details');
+    await expect(page.getByRole('heading', { name: 'Run Details' })).toBeVisible();
 
     await page.getByRole('button', { name: /queue/i }).click();
     await expect(page.locator('.badge-queued')).toBeVisible();

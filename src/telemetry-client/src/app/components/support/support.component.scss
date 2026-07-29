@@ -1,11 +1,16 @@
 mat-card-content {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
+}
+
+.health-copy {
+  margin: 0;
+  color: var(--text-muted);
 }
 
 .health-error {
-  color: #b00020; /* Material danger red */
   margin: 0;
+  color: #b00020;
   font-size: 0.85rem;
 }

@@ -1,35 +1,38 @@
-<mat-card>
-  <mat-card-header>
-    <mat-card-title>System Health</mat-card-title>
-  </mat-card-header>
+<div class="page">
+  <header class="page-header">
+    <h1 class="page-title">System Health</h1>
+  </header>
 
-  <mat-card-content>
-    <p>Check the API and database connection status.</p>
+  <mat-card>
+    <mat-card-content>
+      <p class="health-copy">Check the API and database connection status.</p>
 
-    @if (healthStatus()) {
-      <mat-chip-set>
-        <mat-chip
-          [class]="healthStatus() === 'Healthy' ? 'badge-completed' : 'badge-failed'"
-          [highlighted]="healthStatus() !== 'Healthy'">
-          {{ healthStatus() }}
-        </mat-chip>
-      </mat-chip-set>
+      @if (healthStatus()) {
+        <mat-chip-set>
+          <mat-chip
+            [class]="healthStatus() === 'Healthy' ? 'badge-completed' : 'badge-failed'"
+            [highlighted]="healthStatus() !== 'Healthy'">
+            {{ healthStatus() }}
+          </mat-chip>
+        </mat-chip-set>
 
-      @if (lastError()) {
-        <p class="health-error">{{ lastError() }}</p>
+        @if (lastError()) {
+          <p class="health-error">{{ lastError() }}</p>
+        }
       }
-    }
-  </mat-card-content>
+    </mat-card-content>
 
-  <mat-card-actions>
-    @if (checking()) {
-      <button mat-flat-button color="primary" disabled>
-        <mat-spinner diameter="20"></mat-spinner>
-      </button>
-    } @else {
-      <button mat-flat-button color="primary" (click)="checkHealth()">
-        <mat-icon>monitor_heart</mat-icon> Check Health
-      </button>
-    }
-  </mat-card-actions>
-</mat-card>
+    <mat-card-actions>
+      @if (checking()) {
+        <button mat-flat-button color="primary" disabled>
+          <mat-spinner diameter="20"></mat-spinner>
+        </button>
+      } @else {
+        <button mat-flat-button color="primary" (click)="checkHealth()">
+          <mat-icon>monitor_heart</mat-icon>
+          Check Health
+        </button>
+      }
+    </mat-card-actions>
+  </mat-card>
+</div>

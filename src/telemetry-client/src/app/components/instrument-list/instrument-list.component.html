@@ -1,84 +1,93 @@
-<div class="layout">
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>Create Instrument</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <form [formGroup]="form" (ngSubmit)="onCreate()" class="instrument-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Name</mat-label>
-          <input matInput formControlName="name" placeholder="e.g. HPLC-01" />
-          @if (form.get('name')?.hasError('required')) {
-            <mat-error>Name is required</mat-error>
-          }
-        </mat-form-field>
+<div class="page">
+  <header class="page-header">
+    <h1 class="page-title">Instruments</h1>
+  </header>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Type</mat-label>
-          <input matInput formControlName="type" placeholder="e.g. Chromatograph" />
-          @if (form.get('type')?.hasError('required')) {
-            <mat-error>Type is required</mat-error>
-          }
-        </mat-form-field>
+  <div class="stack">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Create Instrument</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="form" (ngSubmit)="onCreate()" class="instrument-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Name</mat-label>
+            <input matInput formControlName="name" placeholder="e.g. HPLC-01" />
+            @if (form.get('name')?.hasError('required')) {
+              <mat-error>Name is required</mat-error>
+            }
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Serial Number (optional)</mat-label>
-          <input matInput formControlName="serialNumber" />
-        </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Type</mat-label>
+            <input matInput formControlName="type" placeholder="e.g. Chromatograph" />
+            @if (form.get('type')?.hasError('required')) {
+              <mat-error>Type is required</mat-error>
+            }
+          </mat-form-field>
 
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting()">
-          <mat-icon>add</mat-icon> Create Instrument
-        </button>
-      </form>
-    </mat-card-content>
-  </mat-card>
+          <mat-form-field appearance="outline">
+            <mat-label>Serial Number (optional)</mat-label>
+            <input matInput formControlName="serialNumber" />
+          </mat-form-field>
 
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>Instruments</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      @if (loading()) {
-        <div class="loading-container">
-          <mat-spinner diameter="40"></mat-spinner>
-        </div>
-      } @else if (instruments().length === 0) {
-        <p class="empty-message">No instruments yet. Create one above.</p>
-      } @else {
-        <table mat-table [dataSource]="instruments()" class="full-width">
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Name</th>
-            <td mat-cell *matCellDef="let instrument">{{ instrument.name }}</td>
-          </ng-container>
+          <div class="page-actions">
+            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting()">
+              <mat-icon>add</mat-icon>
+              Create Instrument
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
 
-          <ng-container matColumnDef="type">
-            <th mat-header-cell *matHeaderCellDef>Type</th>
-            <td mat-cell *matCellDef="let instrument">{{ instrument.type }}</td>
-          </ng-container>
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>All Instruments</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (loading()) {
+          <div class="loading-container">
+            <mat-spinner diameter="40"></mat-spinner>
+          </div>
+        } @else if (instruments().length === 0) {
+          <p class="empty-message">No instruments yet. Create one above.</p>
+        } @else {
+          <table mat-table [dataSource]="instruments()" class="full-width">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let instrument">{{ instrument.name }}</td>
+            </ng-container>
 
-          <ng-container matColumnDef="serialNumber">
-            <th mat-header-cell *matHeaderCellDef>Serial</th>
-            <td mat-cell *matCellDef="let instrument">{{ instrument.serialNumber || '—' }}</td>
-          </ng-container>
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let instrument">{{ instrument.type }}</td>
+            </ng-container>
 
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let instrument">{{ instrument.status }}</td>
-          </ng-container>
+            <ng-container matColumnDef="serialNumber">
+              <th mat-header-cell *matHeaderCellDef>Serial</th>
+              <td mat-cell *matCellDef="let instrument">{{ instrument.serialNumber || '—' }}</td>
+            </ng-container>
 
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef></th>
-            <td mat-cell *matCellDef="let instrument">
-              <button mat-stroked-button color="primary" type="button" (click)="useForNewRun(instrument)">
-                Use for run
-              </button>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let instrument">{{ instrument.status }}</td>
+            </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-      }
-    </mat-card-content>
-  </mat-card>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let instrument">
+                <button mat-stroked-button color="primary" type="button" (click)="useForNewRun(instrument)">
+                  Use for run
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        }
+      </mat-card-content>
+    </mat-card>
+  </div>
 </div>

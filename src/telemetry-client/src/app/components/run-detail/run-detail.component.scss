@@ -1,27 +1,12 @@
-.detail-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-mat-card-header {
-  display: flex;
-  align-items: center;
-
-  .spacer {
-    flex: 1;
-  }
-}
-
 .detail-grid {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.5rem 1.5rem;
+  gap: var(--space-sm) var(--space-lg);
   margin: 0;
 
   dt {
     font-weight: 500;
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--text-muted);
   }
 
   dd {
@@ -36,18 +21,5 @@ mat-card-header {
 
 mat-card-actions {
   display: flex;
-  gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.empty-message {
-  text-align: center;
-  padding: 1rem;
-  color: rgba(0, 0, 0, 0.54);
 }

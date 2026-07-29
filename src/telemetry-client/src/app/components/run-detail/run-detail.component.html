@@ -3,106 +3,117 @@
     <mat-spinner diameter="40"></mat-spinner>
   </div>
 } @else if (!run()) {
-  <mat-card>
-    <mat-card-content>
-      <p>Run not found.</p>
-      <a mat-button routerLink="/runs">Back to runs</a>
-    </mat-card-content>
-  </mat-card>
-} @else {
-  <div class="detail-layout">
+  <div class="page">
     <mat-card>
-      <mat-card-header>
-        <mat-card-title>Run Details</mat-card-title>
-        <span class="spacer"></span>
+      <mat-card-content>
+        <p class="empty-message">Run not found.</p>
+        <div class="page-actions centered">
+          <a mat-button routerLink="/runs">Back to runs</a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+} @else {
+  <div class="page">
+    <header class="page-header">
+      <h1 class="page-title">Run Details</h1>
+      <div class="page-actions">
         @let badge = run()!.currentState | stateBadge;
         <mat-chip-set>
           <mat-chip [class]="badge.cssClass" [highlighted]="!!badge.color">
             {{ badge.label }}
           </mat-chip>
         </mat-chip-set>
-      </mat-card-header>
+      </div>
+    </header>
 
-      <mat-card-content>
-        <dl class="detail-grid">
-          <dt>Run ID</dt>
-          <dd class="monospace">{{ run()!.id }}</dd>
+    <div class="stack">
+      <mat-card>
+        <mat-card-content>
+          <dl class="detail-grid">
+            <dt>Run ID</dt>
+            <dd class="monospace">{{ run()!.id }}</dd>
 
-          <dt>Sample ID</dt>
-          <dd>{{ run()!.sampleId }}</dd>
+            <dt>Sample ID</dt>
+            <dd>{{ run()!.sampleId }}</dd>
 
-          <dt>Instrument ID</dt>
-          <dd class="monospace">{{ run()!.instrumentId }}</dd>
+            <dt>Instrument ID</dt>
+            <dd class="monospace">{{ run()!.instrumentId }}</dd>
 
-          <dt>Created</dt>
-          <dd>{{ run()!.createdAt | date:'medium' }}</dd>
+            <dt>Created</dt>
+            <dd>{{ run()!.createdAt | date: 'medium' }}</dd>
 
-          @if (run()!.startedAt) {
-            <dt>Started</dt>
-            <dd>{{ run()!.startedAt | date:'medium' }}</dd>
-          }
-
-          @if (run()!.completedAt) {
-            <dt>Completed</dt>
-            <dd>{{ run()!.completedAt | date:'medium' }}</dd>
-          }
-
-          @if (run()!.correlationId) {
-            <dt>Correlation ID</dt>
-            <dd class="monospace">{{ run()!.correlationId }}</dd>
-          }
-
-          @if (run()!.actor) {
-            <dt>Actor</dt>
-            <dd>{{ run()!.actor }}</dd>
-          }
-        </dl>
-      </mat-card-content>
-
-      <mat-card-actions>
-        @for (action of availableActions(); track action) {
-          <button
-            mat-flat-button
-            [color]="getActionColor(action)"
-            [disabled]="transitioning()"
-            (click)="performTransition(action)"
-            [matTooltip]="'Transition to ' + action">
-            <mat-icon>{{ getActionIcon(action) }}</mat-icon>
-            {{ action | titlecase }}
-          </button>
-        }
-        <button mat-stroked-button (click)="downloadBundle()" matTooltip="Download support bundle ZIP">
-          <mat-icon>download</mat-icon> Support Bundle
-        </button>
-        <a mat-button routerLink="/runs">
-          <mat-icon>arrow_back</mat-icon> Back
-        </a>
-      </mat-card-actions>
-    </mat-card>
-
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Event Timeline</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        @if (events().length === 0) {
-          <p class="empty-message">No events recorded yet.</p>
-        } @else {
-          <mat-list>
-            @for (event of events(); track event.id) {
-              <mat-list-item>
-                <mat-icon matListItemIcon>event</mat-icon>
-                <div matListItemTitle>{{ event.eventType }}</div>
-                <div matListItemLine>
-                  {{ event.timestamp | date:'medium' }}
-                  @if (event.actor) { &mdash; {{ event.actor }} }
-                </div>
-              </mat-list-item>
-              <mat-divider></mat-divider>
+            @if (run()!.startedAt) {
+              <dt>Started</dt>
+              <dd>{{ run()!.startedAt | date: 'medium' }}</dd>
             }
-          </mat-list>
-        }
-      </mat-card-content>
-    </mat-card>
+
+            @if (run()!.completedAt) {
+              <dt>Completed</dt>
+              <dd>{{ run()!.completedAt | date: 'medium' }}</dd>
+            }
+
+            @if (run()!.correlationId) {
+              <dt>Correlation ID</dt>
+              <dd class="monospace">{{ run()!.correlationId }}</dd>
+            }
+
+            @if (run()!.actor) {
+              <dt>Actor</dt>
+              <dd>{{ run()!.actor }}</dd>
+            }
+          </dl>
+        </mat-card-content>
+
+        <mat-card-actions>
+          @for (action of availableActions(); track action) {
+            <button
+              mat-flat-button
+              [color]="getActionColor(action)"
+              [disabled]="transitioning()"
+              (click)="performTransition(action)"
+              [matTooltip]="'Transition to ' + action">
+              <mat-icon>{{ getActionIcon(action) }}</mat-icon>
+              {{ action | titlecase }}
+            </button>
+          }
+          <button mat-stroked-button (click)="downloadBundle()" matTooltip="Download support bundle ZIP">
+            <mat-icon>download</mat-icon>
+            Support Bundle
+          </button>
+          <a mat-button routerLink="/runs">
+            <mat-icon>arrow_back</mat-icon>
+            Back
+          </a>
+        </mat-card-actions>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Event Timeline</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (events().length === 0) {
+            <p class="empty-message">No events recorded yet.</p>
+          } @else {
+            <mat-list>
+              @for (event of events(); track event.id) {
+                <mat-list-item>
+                  <mat-icon matListItemIcon>event</mat-icon>
+                  <div matListItemTitle>{{ event.eventType }}</div>
+                  <div matListItemLine>
+                    {{ event.timestamp | date: 'medium' }}
+                    @if (event.actor) {
+                      &mdash; {{ event.actor }}
+                    }
+                  </div>
+                </mat-list-item>
+                <mat-divider></mat-divider>
+              }
+            </mat-list>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
   </div>
 }
