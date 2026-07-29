@@ -158,7 +158,8 @@ This API has **no authentication or authorization**. It is intended for **truste
 ## Prerequisites
 
 - .NET 8 SDK  
-- Docker (for local PostgreSQL and for integration tests)
+- Node.js 20+ and npm (for the Angular client)
+- Docker (for local PostgreSQL, integration tests, and full-stack Docker Compose)
 
 ---
 
@@ -205,6 +206,56 @@ The API does not ship with a connection string. Provide it in one of these ways:
 
    For HTTPS: `dotnet run --project src/Telemetry.Api --launch-profile https`, then https://localhost:7254/swagger.
 
+5. **Run the Angular client** (in a second terminal):
+
+   ```bash
+   cd src/telemetry-client
+   npm install
+   npm start
+   ```
+
+   Open **http://localhost:4200**. The Angular app calls the API under `/api/*` (proxied to `localhost:5244`).
+
+### Full-stack Docker Compose
+
+Run everything with one command (no local .NET or Node required):
+
+```bash
+docker compose up --build
+```
+
+If BuildKit fails on Windows/OneDrive with `Canceled: context canceled`, build with the classic builder:
+
+```bash
+set DOCKER_BUILDKIT=0
+docker compose build
+docker compose up -d
+```
+
+- **API**: http://localhost:5244 (Swagger at `/swagger`)
+- **Angular client**: http://localhost:4200 (API proxied under `/api`)
+- **PostgreSQL**: port 5433
+
+---
+
+## Angular client
+
+The Angular 18 client in [src/telemetry-client/](src/telemetry-client/) provides a browser-based UI for the Telemetry API:
+
+- **Run list** (`/runs`) -- table of runs with color-coded state badges, auto-refreshes via SignalR
+- **Create run** (`/runs/new`) -- typed reactive form for creating a run with instrument and sample IDs
+- **Run detail** (`/runs/:id`) -- run metadata, state transition buttons (only valid actions shown), event timeline, support bundle download
+- **Health** (`/support`) -- checks the API's `/health` endpoint (PostgreSQL connectivity)
+
+Key patterns demonstrated:
+- Standalone components (no NgModules)
+- Signals for reactive state (`signal()`, `computed()`)
+- `HttpClient` with functional interceptors (correlation ID, error handling)
+- SignalR integration for real-time updates
+- 409 Conflict handling with Material snackbar UX
+- Custom `stateBadge` pipe for color-coded state chips
+- Typed reactive forms with `nonNullable` form builder
+
 ---
 
 ## Demo dashboard and GitHub Pages
@@ -234,6 +285,8 @@ The dashboard is static (HTML/CSS/JS) in the [docs/](docs/) folder. Optional: us
 | GET | `/runs/{id}` | Run state and metadata |
 | GET | `/runs/{id}/timeline` | Ordered event timeline |
 | POST | `/runs/{id}/support-bundle` | Download ZIP (metadata, timeline, environment, optional logs) |
+| GET | `/health` | Health check (API + PostgreSQL) |
+| WS | `/hubs/runs` | SignalR hub for real-time run state change notifications |
 
 Use the same `X-Correlation-Id` header across requests to trace a run in logs and support bundles.
 
@@ -253,10 +306,18 @@ Use the same `X-Correlation-Id` header across requests to trace a run in logs an
   dotnet test tests/Telemetry.IntegrationTests/Telemetry.IntegrationTests.csproj
   ```
 
-- **All tests**:
+- **All .NET tests**:
 
   ```bash
   dotnet test
+  ```
+
+- **Playwright e2e tests** (requires API running at `localhost:5244`):
+
+  ```bash
+  cd src/telemetry-client
+  npm run e2e:install   # first time only
+  npm run e2e
   ```
 
 ---
@@ -280,4 +341,9 @@ Connection string must be provided via configuration (e.g. `appsettings.json`, U
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on push and pull requests to `main`: restore → build (Api + unit + integration test projects only; Windows-only projects like Dashboard are skipped on Linux) → unit tests → integration tests (Testcontainers) → publish test results.
+GitHub Actions (`.github/workflows/ci.yml`) runs on push and pull requests to `main`:
+
+- **build-and-test**: Node + Angular production build → .NET restore/build → unit tests → integration tests (Testcontainers) → publish results
+- **compose-e2e**: `docker compose up --build` (postgres + API + Angular client) → health/smoke checks → Playwright e2e against the live stack
+
+The API container applies EF migrations on startup when `Database__ApplyMigrations=true` (set in `docker-compose.yml`).

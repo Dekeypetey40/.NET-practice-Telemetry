@@ -1,0 +1,42 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Create Run</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="run-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Instrument ID</mat-label>
+        <input matInput formControlName="instrumentId" placeholder="GUID of the instrument" />
+        @if (form.get('instrumentId')?.hasError('required')) {
+          <mat-error>Instrument ID is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Sample ID</mat-label>
+        <input matInput formControlName="sampleId" placeholder="e.g. SAMPLE-001" />
+        @if (form.get('sampleId')?.hasError('required')) {
+          <mat-error>Sample ID is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Method Name (optional)</mat-label>
+        <input matInput formControlName="methodName" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Method Version (optional)</mat-label>
+        <input matInput formControlName="methodVersion" />
+      </mat-form-field>
+
+      <div class="form-actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting()">
+          <mat-icon>play_arrow</mat-icon> Create Run
+        </button>
+        <a mat-button routerLink="/runs">Cancel</a>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

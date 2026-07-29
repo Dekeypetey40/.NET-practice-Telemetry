@@ -1,0 +1,7 @@
+node_modules
+dist
+.angular
+e2e
+playwright.config.ts
+playwright-report
+test-results

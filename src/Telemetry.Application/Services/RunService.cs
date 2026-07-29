@@ -11,11 +11,13 @@ public class RunService : IRunService
 {
     private readonly IRunRepository _runRepository;
     private readonly IInstrumentRepository _instrumentRepository;
+    private readonly IRunNotifier _runNotifier;
 
-    public RunService(IRunRepository runRepository, IInstrumentRepository instrumentRepository)
+    public RunService(IRunRepository runRepository, IInstrumentRepository instrumentRepository, IRunNotifier runNotifier)
     {
         _runRepository = runRepository;
         _instrumentRepository = instrumentRepository;
+        _runNotifier = runNotifier;
     }
 
     private const int MaxParametersCount = 50;
@@ -37,7 +39,9 @@ public class RunService : IRunService
 
         var run = Run.Create(request.InstrumentId, sampleId, methodMetadata, correlationId);
         await _runRepository.AddAsync(run, cancellationToken);
-        return ToResponse(run);
+        var response = ToResponse(run);
+        await _runNotifier.NotifyRunChangedAsync(response, cancellationToken);
+        return response;
     }
 
     public async Task<RunResponse> QueueAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
@@ -49,7 +53,9 @@ public class RunService : IRunService
             throw new InvalidOperationException($"Run is in state {run.CurrentState}; cannot queue. Only Created runs can be queued.");
         run.SetQueued(actor);
         await _runRepository.SaveChangesAsync(cancellationToken);
-        return ToResponse(run);
+        var response = ToResponse(run);
+        await _runNotifier.NotifyRunChangedAsync(response, cancellationToken);
+        return response;
     }
 
     public async Task<RunResponse> StartAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
@@ -61,7 +67,9 @@ public class RunService : IRunService
             throw new InvalidOperationException($"Run is in state {run.CurrentState}; cannot start. Only Queued runs can be started.");
         run.SetRunning(actor);
         await _runRepository.SaveChangesAsync(cancellationToken);
-        return ToResponse(run);
+        var response = ToResponse(run);
+        await _runNotifier.NotifyRunChangedAsync(response, cancellationToken);
+        return response;
     }
 
     public async Task<RunResponse> CancelAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
@@ -73,7 +81,9 @@ public class RunService : IRunService
             throw new InvalidOperationException($"Run is in state {run.CurrentState}; cannot cancel. Only Created, Queued, or Running runs can be canceled.");
         run.SetCanceled(actor);
         await _runRepository.SaveChangesAsync(cancellationToken);
-        return ToResponse(run);
+        var response = ToResponse(run);
+        await _runNotifier.NotifyRunChangedAsync(response, cancellationToken);
+        return response;
     }
 
     public async Task<RunResponse> CompleteAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
@@ -85,7 +95,9 @@ public class RunService : IRunService
             throw new InvalidOperationException($"Run is in state {run.CurrentState}; cannot complete. Only Running runs can be completed.");
         run.SetCompleted(actor);
         await _runRepository.SaveChangesAsync(cancellationToken);
-        return ToResponse(run);
+        var response = ToResponse(run);
+        await _runNotifier.NotifyRunChangedAsync(response, cancellationToken);
+        return response;
     }
 
     public async Task<RunResponse> FailAsync(Guid runId, string? actor = null, CancellationToken cancellationToken = default)
@@ -97,7 +109,9 @@ public class RunService : IRunService
             throw new InvalidOperationException($"Run is in state {run.CurrentState}; cannot fail. Only Running runs can be failed.");
         run.SetFailed(actor);
         await _runRepository.SaveChangesAsync(cancellationToken);
-        return ToResponse(run);
+        var response = ToResponse(run);
+        await _runNotifier.NotifyRunChangedAsync(response, cancellationToken);
+        return response;
     }
 
     public async Task<RunResponse?> GetByIdAsync(Guid runId, CancellationToken cancellationToken = default)

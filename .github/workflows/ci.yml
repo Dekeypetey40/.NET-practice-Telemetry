@@ -22,6 +22,21 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: src/telemetry-client/package-lock.json
+
+      - name: Install Angular dependencies
+        run: npm ci
+        working-directory: src/telemetry-client
+
+      - name: Build Angular client
+        run: npx ng build --configuration production
+        working-directory: src/telemetry-client
+
       - name: Restore
         run: |
           dotnet restore src/Telemetry.Api/Telemetry.Api.csproj
@@ -54,3 +69,84 @@ jobs:
         with:
           name: coverage
           path: TestResults/
+
+  compose-e2e:
+    name: Compose + Playwright e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: src/telemetry-client/package-lock.json
+
+      - name: Install Angular dependencies
+        run: npm ci
+        working-directory: src/telemetry-client
+
+      - name: Build and start full stack (postgres + api + client)
+        run: docker compose up --build -d
+
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5244/health; then
+              echo
+              echo "API healthy"
+              exit 0
+            fi
+            echo "Waiting for API... ($i)"
+            sleep 2
+          done
+          echo "API did not become healthy in time"
+          docker compose logs
+          exit 1
+
+      - name: Wait for Angular client
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:4200/ >/dev/null; then
+              echo "Client ready"
+              exit 0
+            fi
+            echo "Waiting for client... ($i)"
+            sleep 2
+          done
+          echo "Client did not become ready in time"
+          docker compose logs client
+          exit 1
+
+      - name: Smoke check API via client /api proxy
+        run: |
+          curl -fsS http://localhost:4200/api/health
+          echo
+          curl -fsS -o /dev/null -w "%{http_code}\n" http://localhost:4200/runs
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: src/telemetry-client
+
+      - name: Run Playwright e2e
+        run: npm run e2e
+        working-directory: src/telemetry-client
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            src/telemetry-client/playwright-report/
+            src/telemetry-client/test-results/
+          if-no-files-found: ignore
+
+      - name: Dump compose logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down compose stack
+        if: always()
+        run: docker compose down -v

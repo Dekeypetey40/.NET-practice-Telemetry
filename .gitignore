@@ -63,3 +63,10 @@ logs/
 docs/GITHUB_SETUP.md
 
 .fake
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+test-results/
+playwright-report/
