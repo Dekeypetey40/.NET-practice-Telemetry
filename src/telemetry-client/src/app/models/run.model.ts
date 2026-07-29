@@ -44,6 +44,17 @@ export interface InstrumentHealthResponse {
   alarms: Alarm[];
 }
 
+/** Matches API InstrumentResponse from GET /instruments. */
+export interface Instrument {
+  id: string;
+  name: string;
+  type: string;
+  serialNumber: string | null;
+  status: string;
+  createdAt: string;
+  lastHealthCheck: string | null;
+}
+
 export interface Alarm {
   id: string;
   severity: string;
@@ -55,7 +66,7 @@ export interface Alarm {
 export interface CreateInstrumentRequest {
   name: string;
   type: string;
-  serialNumber: string;
+  serialNumber?: string;
 }
 
 /**

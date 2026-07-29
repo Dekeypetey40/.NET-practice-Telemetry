@@ -243,7 +243,8 @@ docker compose up -d
 The Angular 18 client in [src/telemetry-client/](src/telemetry-client/) provides a browser-based UI for the Telemetry API:
 
 - **Run list** (`/runs`) -- table of runs with color-coded state badges, auto-refreshes via SignalR
-- **Create run** (`/runs/new`) -- typed reactive form for creating a run with instrument and sample IDs
+- **Create run** (`/runs/new`) -- typed reactive form; pick an instrument from a dropdown (no GUID pasting)
+- **Instruments** (`/instruments`) -- create instruments and start a run from a selected device
 - **Run detail** (`/runs/:id`) -- run metadata, state transition buttons (only valid actions shown), event timeline, support bundle download
 - **Health** (`/support`) -- checks the API's `/health` endpoint (PostgreSQL connectivity)
 
@@ -275,6 +276,7 @@ The dashboard is static (HTML/CSS/JS) in the [docs/](docs/) folder. Optional: us
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/instruments` | Create an instrument |
+| GET | `/instruments` | List recent instruments |
 | GET | `/instruments/{id}/health` | Instrument health and alarms |
 | POST | `/runs` | Create a run (instrument, sample, optional method metadata) |
 | POST | `/runs/{id}/queue` | Move run from Created → Queued |

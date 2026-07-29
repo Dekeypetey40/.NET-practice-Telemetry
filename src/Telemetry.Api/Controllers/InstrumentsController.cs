@@ -21,6 +21,15 @@ public class InstrumentsController : ControllerBase
         return CreatedAtAction(nameof(GetHealth), new { id = result.InstrumentId }, result);
     }
 
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<InstrumentResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<InstrumentResponse>>> List([FromQuery] int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var capped = Math.Clamp(limit, 1, 500);
+        var instruments = await _instrumentService.GetRecentAsync(capped, cancellationToken);
+        return Ok(instruments);
+    }
+
     [HttpGet("{id:guid}/health")]
     [ProducesResponseType(typeof(InstrumentHealthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

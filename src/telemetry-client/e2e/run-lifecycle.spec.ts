@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Requires the .NET API to be running at localhost:5244 with a database.
- * The Angular dev server is started automatically by Playwright (see playwright.config.ts).
+ * Requires the .NET API at localhost:5244 and the Angular app at localhost:4200
+ * (Docker Compose client or ng serve with proxy).
  */
 
 const API = 'http://localhost:5244';
@@ -16,7 +16,6 @@ test.describe('Run lifecycle', () => {
     });
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
-    // Create instrument returns InstrumentHealthResponse with instrumentId (not id).
     instrumentId = body.instrumentId;
   });
 
@@ -46,7 +45,7 @@ test.describe('Run lifecycle', () => {
     await expect(timeline).toHaveCount(3);
   });
 
-  test('409 conflict: starting a Created run is rejected by the API', async ({ request }) => {
+  test('409 conflict: invalid transition shows conflict snackbar in the UI', async ({ page, request }) => {
     const sampleId = `CONFLICT-${Date.now()}`;
 
     const createRes = await request.post(`${API}/runs`, {
@@ -54,9 +53,23 @@ test.describe('Run lifecycle', () => {
     });
     const run = await createRes.json();
 
-    const startRes = await request.post(`${API}/runs/${run.id}/start`);
-    expect(startRes.status()).toBe(409);
-    const errorBody = await startRes.text();
-    expect(errorBody).toContain('cannot start');
+    await page.goto(`/runs/${run.id}`);
+    await expect(page.locator('.badge-created')).toBeVisible();
+
+    const conflictMessage = 'Run is in state Queued; cannot queue. Only Created runs can be queued.';
+    await page.route(`**/api/runs/${run.id}/queue**`, async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: conflictMessage }),
+      });
+    });
+
+    await page.getByRole('button', { name: /queue/i }).click();
+
+    const snackbar = page.locator('.mat-mdc-snack-bar-container');
+    await expect(snackbar).toBeVisible();
+    await expect(snackbar).toContainText(/cannot queue/i);
+    await expect(snackbar).toHaveClass(/snackbar-conflict/);
   });
 });

@@ -5,13 +5,35 @@
 
   <mat-card-content>
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="run-form">
-      <mat-form-field appearance="outline">
-        <mat-label>Instrument ID</mat-label>
-        <input matInput formControlName="instrumentId" placeholder="GUID of the instrument" />
-        @if (form.get('instrumentId')?.hasError('required')) {
-          <mat-error>Instrument ID is required</mat-error>
-        }
-      </mat-form-field>
+      @if (loadingInstruments()) {
+        <div class="loading-inline">
+          <mat-spinner diameter="28"></mat-spinner>
+          <span>Loading instruments…</span>
+        </div>
+      } @else if (instruments().length === 0) {
+        <p class="hint">
+          No instruments yet.
+          <a routerLink="/instruments">Create an instrument</a> first.
+        </p>
+      } @else {
+        <mat-form-field appearance="outline">
+          <mat-label>Instrument</mat-label>
+          <mat-select formControlName="instrumentId">
+            @for (instrument of instruments(); track instrument.id) {
+              <mat-option [value]="instrument.id">
+                {{ instrument.name }} ({{ instrument.type }})
+              </mat-option>
+            }
+          </mat-select>
+          @if (form.get('instrumentId')?.hasError('required')) {
+            <mat-error>Instrument is required</mat-error>
+          }
+        </mat-form-field>
+        <p class="hint">
+          Need another device?
+          <a routerLink="/instruments">Manage instruments</a>
+        </p>
+      }
 
       <mat-form-field appearance="outline">
         <mat-label>Sample ID</mat-label>
@@ -32,7 +54,11 @@
       </mat-form-field>
 
       <div class="form-actions">
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || submitting()">
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="form.invalid || submitting() || instruments().length === 0">
           <mat-icon>play_arrow</mat-icon> Create Run
         </button>
         <a mat-button routerLink="/runs">Cancel</a>

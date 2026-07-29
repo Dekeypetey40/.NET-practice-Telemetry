@@ -32,6 +32,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
 function extractMessage(error: HttpErrorResponse): string | null {
   if (typeof error.error === 'string') return error.error;
+  // API ExceptionHandlingMiddleware returns { error: "..." }
+  if (error.error?.error && typeof error.error.error === 'string') return error.error.error;
   if (error.error?.message) return error.error.message;
   if (error.error?.title) return error.error.title;
   return null;
