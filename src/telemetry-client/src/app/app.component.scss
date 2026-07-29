@@ -16,5 +16,13 @@ mat-toolbar {
 .content {
   max-width: 960px;
   margin: 2rem auto;
-  padding: 0 1rem;
+  padding: 0 1rem 4rem;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 0.85rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
 }

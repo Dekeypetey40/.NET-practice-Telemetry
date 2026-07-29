@@ -14,6 +14,10 @@
           {{ healthStatus() }}
         </mat-chip>
       </mat-chip-set>
+
+      @if (lastError()) {
+        <p class="health-error">{{ lastError() }}</p>
+      }
     }
   </mat-card-content>
 
