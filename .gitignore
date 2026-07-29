@@ -68,3 +68,5 @@ docs/GITHUB_SETUP.md
 node_modules/
 dist/
 .angular/
+test-results/
+playwright-report/
