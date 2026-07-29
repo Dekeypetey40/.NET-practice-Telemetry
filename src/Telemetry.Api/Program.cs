@@ -1,6 +1,8 @@
 using Serilog;
+using Telemetry.Api.Hubs;
 using Telemetry.Api.Middleware;
 using Telemetry.Api.Services;
+using Telemetry.Application.Contracts;
 using Telemetry.Application.Extensions;
 using Telemetry.Infrastructure.Extensions;
 using Telemetry.Infrastructure.Services;
@@ -16,17 +18,20 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICorrelationIdProvider, HttpContextCorrelationIdProvider>();
-// Default policy is permissive for local/demo use. For production, use a named policy with specific origins, e.g.:
-// options.AddPolicy("Production", policy => policy.WithOrigins("https://your-frontend.com").AllowAnyMethod().AllowAnyHeader());
+// Permissive CORS for local/demo use. SignalR requires AllowCredentials (incompatible with AllowAnyOrigin),
+// so we allow specific origins via SetIsOriginAllowed. For production, restrict to known origins.
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRunNotifier, SignalRRunNotifier>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -35,6 +40,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 if (string.IsNullOrWhiteSpace(connectionString) || connectionString.StartsWith("<required:", StringComparison.Ordinal))
     throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required. Set it via User Secrets, appsettings.Development.json, or environment. See README.");
 
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionString);
 builder.Services.AddTelemetryApplication();
 builder.Services.AddTelemetryInfrastructure(connectionString, logCollector);
 
@@ -54,6 +61,8 @@ if (app.Environment.IsDevelopment())
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 app.MapControllers();
+app.MapHub<RunHub>("/hubs/runs");
+app.MapHealthChecks("/health");
 
 try
 {
